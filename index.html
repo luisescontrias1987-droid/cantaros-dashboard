@@ -144,6 +144,8 @@ label{display:block;font-size:13px;font-weight:600;margin:0 0 5px;color:var(--te
 table{width:100%;border-collapse:collapse;font-size:13.5px;min-width:640px}
 th,td{padding:8px 10px;text-align:left;border-bottom:1px solid var(--border);white-space:nowrap}
 th{font-size:11.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);position:sticky;top:0;background:var(--surface)}
+th[data-sort]{cursor:pointer;user-select:none}
+th[data-sort]:hover{color:var(--accent-text);text-decoration:underline}
 td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
 tr.loss-row{background:var(--danger-soft)}
 tr.surplus-row{background:var(--warn-soft)}
@@ -185,7 +187,7 @@ tr.section-row td{font-weight:800;background:var(--surface-2);text-transform:upp
   color:var(--gold);margin-top:4px;line-height:1.3}
 .sched-table td.name-cell{font-weight:600;white-space:normal;min-width:150px}
 .sched-table td.staff-no{color:var(--muted);text-align:right;width:36px}
-.sched-input{width:100%;min-width:66px;text-align:center;text-transform:uppercase;font-weight:700;
+.sched-input{width:100%;min-width:86px;text-align:center;text-transform:uppercase;font-weight:700;font-size:13px;
   padding:6px 4px;border-radius:8px;border:1px solid var(--border);background:var(--surface)}
 .sched-input.cell-off{background:#dbeafe;color:#175cd3;border-color:#bfd3f7}
 .sched-input.cell-f{background:#fdecea;color:#c0392b;border-color:#f5c1bb}
@@ -198,6 +200,15 @@ html[data-theme="dark"] .sched-input.cell-f{background:#3d1d1a;color:#f0857a;bor
 .week-picker input[type="date"]{max-width:180px}
 .event-item{display:flex;gap:10px;align-items:flex-start;padding:9px 0;border-bottom:1px solid var(--border)}
 .event-item:last-child{border-bottom:none}
+
+/* ---------- modal (ver imagen) ---------- */
+.modal-overlay{position:fixed;inset:0;z-index:100;background:rgba(10,20,15,.72);display:flex;align-items:center;justify-content:center;padding:16px}
+.modal{background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:18px;box-shadow:var(--shadow);max-width:1080px;width:100%;max-height:92vh;overflow:auto;padding:18px}
+.modal-head{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:12px}
+.modal-head h3{margin:0}
+.modal img{width:100%;height:auto;border-radius:12px;border:1px solid var(--border)}
+.modal-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}
+.modal-actions a.btn{text-decoration:none}
 
 /* ---------- mobile ---------- */
 .mobilenav{display:none}
@@ -257,6 +268,13 @@ html[data-theme="dark"] .sched-input.cell-f{background:#3d1d1a;color:#f0857a;bor
       <div class="side-week">
         <label for="weekSelect">Semana (lunes)</label>
         <select id="weekSelect"><option value="2026-11-02">Semana del 02 nov 2026</option></select>
+        <label for="periodSelect" style="margin-top:10px">Periodo del panel</label>
+        <select id="periodSelect">
+          <option value="semana" selected>Semana</option>
+          <option value="mes">Mes</option>
+          <option value="anio">Año</option>
+        </select>
+        <p class="tiny" style="color:var(--sidebar-muted);margin:7px 0 0">El inventario y la captura siguen siendo por semana.</p>
       </div>
       <button class="theme-btn" id="themeBtn" type="button"><span>🌙 Tema oscuro</span><span id="themeIcon">○</span></button>
       <div class="small" style="color:var(--sidebar-muted)">
@@ -305,7 +323,7 @@ html[data-theme="dark"] .sched-input.cell-f{background:#3d1d1a;color:#f0857a;bor
         </div>
         <div class="card">
           <h3>Tendencia de ventas</h3>
-          <p class="card-sub">Venta neta por semana cargada en la base. Solo semanas reales.</p>
+          <p class="card-sub" id="trendSub">Venta neta por semana cargada en la base. Solo periodos reales.</p>
           <div id="trendBox"></div>
         </div>
       </div>
@@ -313,7 +331,7 @@ html[data-theme="dark"] .sched-input.cell-f{background:#3d1d1a;color:#f0857a;bor
       <div class="grid2">
         <div class="card">
           <h3>Venta neta por grupo</h3>
-          <p class="card-sub">Del reporte de Soft Restaurant de la semana seleccionada.</p>
+          <p class="card-sub">Del reporte de Soft Restaurant del periodo seleccionado.</p>
           <div id="groupBox"></div>
         </div>
         <div class="card">
@@ -328,9 +346,48 @@ html[data-theme="dark"] .sched-input.cell-f{background:#3d1d1a;color:#f0857a;bor
 
       <div class="card">
         <h3>Top 10 productos por venta</h3>
-        <p class="card-sub">Venta con IVA, costo teórico y margen de la semana seleccionada.</p>
+        <p class="card-sub">Venta con IVA, costo teórico y margen del periodo seleccionado.</p>
         <div class="table-wrap"><table id="topTable">
           <thead><tr><th>#</th><th>Producto</th><th class="num">Cant.</th><th class="num">Venta con IVA</th><th class="num">Venta neta</th><th class="num">Costo</th><th class="num">Margen</th></tr></thead>
+          <tbody></tbody>
+        </table></div>
+      </div>
+
+      <div class="grid2">
+        <div class="card">
+          <h3>⭐ Productos estrella</h3>
+          <p class="card-sub">Top 5 por venta neta del periodo seleccionado.</p>
+          <div id="starsBox"></div>
+        </div>
+        <div class="card">
+          <h3>Top por grupo</h3>
+          <p class="card-sub">Totales por grupo del periodo. Haz clic en un encabezado para ordenar.</p>
+          <div class="table-wrap"><table id="groupTopTable">
+            <thead><tr><th data-sort="grupo">Grupo</th><th class="num" data-sort="neta">Venta neta</th><th class="num" data-sort="unidades">Unidades</th><th class="num" data-sort="margen">Margen</th><th class="num" data-sort="pct">% del total</th></tr></thead>
+            <tbody></tbody>
+          </table></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>Productos vendidos</h3>
+        <p class="card-sub">Todos los productos con venta en el periodo. Haz clic en un encabezado para ordenar.</p>
+        <div class="search-row">
+          <input type="search" id="prodSearch" placeholder="Buscar producto o grupo…">
+          <span class="badge grey" id="prodCount"></span>
+        </div>
+        <div class="table-wrap"><table id="productsTable">
+          <thead><tr><th data-sort="nombre">Producto</th><th data-sort="grupo">Grupo</th><th class="num" data-sort="unidades">Unidades</th><th class="num" data-sort="neta">Venta neta</th><th class="num" data-sort="costo">Costo</th><th class="num" data-sort="margen">Margen $</th><th class="num" data-sort="margenPct">Margen %</th></tr></thead>
+          <tbody></tbody>
+        </table></div>
+      </div>
+
+      <div class="card">
+        <h3>Evolución histórica</h3>
+        <p class="card-sub" id="historySub">Venta neta y margen por periodo cargado. Solo periodos reales.</p>
+        <div id="historyChart"></div>
+        <div class="table-wrap" style="margin-top:14px"><table id="historyTable">
+          <thead><tr><th>Periodo</th><th class="num">Venta neta</th><th class="num">Margen</th><th class="num">Margen %</th></tr></thead>
           <tbody></tbody>
         </table></div>
       </div>
@@ -389,51 +446,27 @@ html[data-theme="dark"] .sched-input.cell-f{background:#3d1d1a;color:#f0857a;bor
         </table></div>
       </div>
 
-      <div class="card">
-        <h3>Conteo de inventario (una fila)</h3>
-        <p class="card-sub">Captura un producto contado esta semana. El sistema calcula total, diferencia, perdido y sobrante en $.</p>
-        <form id="invForm">
-          <div class="form-grid">
-            <div><label for="iArea">Área</label><select id="iArea"><option value="barra">Barra</option><option value="cocina">Cocina</option></select></div>
-            <div><label for="iWeek">Semana (lunes)</label><input type="date" id="iWeek" required></div>
-            <div><label for="iSection">Sección</label><input type="text" id="iSection" placeholder="Ej. CERVEZA, ABARROTES"></div>
-            <div class="full"><label for="iProduct">Producto</label><input type="text" id="iProduct" list="invProducts" placeholder="Nombre exacto del producto" required><datalist id="invProducts"></datalist></div>
-            <div><label for="iUnit">Unidad</label><input type="text" id="iUnit" placeholder="pz, oz, L, kg…"></div>
-            <div><label for="iCost">Costo unitario ($)</label><input type="number" id="iCost" min="0" step="0.01" placeholder="0.00"></div>
-            <div><label for="iMin">Mínimo</label><input type="number" id="iMin" min="0" step="0.01" placeholder="0"></div>
-            <div><label for="iInicial">Inventario inicial</label><input type="number" id="iInicial" step="0.01" value="0"></div>
-            <div><label for="iCompras">Compras</label><input type="number" id="iCompras" step="0.01" value="0"></div>
-            <div><label for="iAlmacen">Almacén</label><input type="number" id="iAlmacen" step="0.01" value="0"></div>
-            <div><label for="iDisplay">Display</label><input type="number" id="iDisplay" step="0.01" value="0"></div>
-            <div><label for="iBarra">Barra</label><input type="number" id="iBarra" step="0.01" value="0"></div>
-            <div><label for="iVenta">Venta</label><input type="number" id="iVenta" step="0.01" value="0"></div>
-          </div>
-          <div style="margin-top:14px"><button class="btn" type="submit" id="invSubmit">Guardar conteo</button></div>
-          <div class="form-msg" id="invMsg"></div>
-        </form>
-      </div>
-
       <div class="grid2">
         <div class="card">
-          <h3>Subir reporte de Soft Restaurant (CSV)</h3>
-          <p class="card-sub">Pega el archivo del reporte tal cual sale del POS. Se guarda en la tabla de staging y se cruza con el catálogo para calcular costo y margen.</p>
+          <h3>Subir reporte de Soft Restaurant (Excel o CSV)</h3>
+          <p class="card-sub">El archivo del reporte tal cual sale del POS, en Excel (.xlsx) o CSV. Se guarda en la tabla de staging y se cruza con el catálogo para calcular costo y margen.</p>
           <div class="file-box">
             <label for="posWeek">Semana del reporte (lunes)</label>
             <input type="date" id="posWeek" style="margin-bottom:10px">
-            <input type="file" id="posFile" accept=".csv,text/csv">
+            <input type="file" id="posFile" accept=".csv,.xls,.xlsx,text/csv,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet">
             <div style="margin-top:12px"><button class="btn" type="button" id="posUploadBtn">Subir reporte</button></div>
             <div class="form-msg" id="posMsg"></div>
           </div>
         </div>
         <div class="card">
-          <h3>Subir conteo de inventario (CSV)</h3>
-          <p class="card-sub">El archivo de Excel de la semana, exportado a CSV, con las columnas del inventario.</p>
+          <h3>Subir conteo de inventario (Excel o CSV)</h3>
+          <p class="card-sub">El archivo de Excel de la semana (.xls/.xlsx) o exportado a CSV, con las columnas del inventario (Producto, Unidad, Inventario inicial, Compras, Almacén, Display, Barra, Venta, Mínimo, Costo unitario). El inventario siempre se carga por archivo, no a mano.</p>
           <div class="file-box">
             <label for="csvArea">Área</label>
             <select id="csvArea" style="margin-bottom:10px"><option value="barra">Barra</option><option value="cocina">Cocina</option></select>
             <label for="csvWeek">Semana (lunes)</label>
             <input type="date" id="csvWeek" style="margin-bottom:10px">
-            <input type="file" id="csvFile" accept=".csv,text/csv">
+            <input type="file" id="csvFile" accept=".csv,.xls,.xlsx,text/csv,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet">
             <div style="margin-top:12px"><button class="btn" type="button" id="csvUploadBtn">Subir conteo</button></div>
             <div class="form-msg" id="csvMsg"></div>
           </div>
@@ -448,13 +481,18 @@ html[data-theme="dark"] .sched-input.cell-f{background:#3d1d1a;color:#f0857a;bor
           <h2>Horarios del staff</h2>
           <p id="horariosSub">Semana del … · turnos por área. Escribe el código del turno y se guarda solo.</p>
         </div>
-        <button class="btn ghost small" id="exportSchedBtn" type="button">⬇ Exportar imagen (PNG)</button>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn ghost small" id="viewImgBtn" type="button">🖼️ Ver imagen</button>
+          <button class="btn ghost small" id="exportXlsxBtn" type="button">⬇ Exportar Excel</button>
+          <button class="btn ghost small" id="exportPdfBtn" type="button">⬇ Exportar PDF</button>
+        </div>
       </div>
       <div id="horariosNotice"></div>
       <div class="legend-codes">
         <span class="badge blue">OFF · descanso</span>
         <span class="badge red">F · falta / inasistencia</span>
         <span class="badge green">11-CL · entrada 11:00 a cierre (regularmente 12:00am)</span>
+        <span class="badge grey">11:00-20:00 · entrada y salida</span>
         <span class="badge grey">Vacío · sin turno</span>
       </div>
       <div class="week-picker">
@@ -468,7 +506,7 @@ html[data-theme="dark"] .sched-input.cell-f{background:#3d1d1a;color:#f0857a;bor
           <tbody></tbody>
         </table></div>
         <div class="form-msg" id="schedMsg"></div>
-        <p class="small muted" style="margin:12px 0 0">Códigos: 11-CL, 10-CL, 12-CL, 2-CL, 3-CL, 4-CL, 5-CL, 6-CL, OFF, F. Si una semana no tiene turnos guardados, las celdas quedan vacías: nunca se copia otra semana.</p>
+        <p class="small muted" style="margin:12px 0 0">Escribe el turno libre en cada celda y se guarda solo: <b>11-CL</b> o <b>11:00-CL</b> (entrada a cierre), <b>11:00-20:00</b> (entrada y salida), <b>OFF</b> (descanso), <b>F</b> (falta). Vacía la celda para quitar el turno. Si una semana no tiene turnos guardados, las celdas quedan vacías: nunca se copia otra semana.</p>
       </div>
       <div class="grid2">
         <div class="card">
@@ -507,6 +545,9 @@ html[data-theme="dark"] .sched-input.cell-f{background:#3d1d1a;color:#f0857a;bor
         <option value="2-CL"></option><option value="3-CL"></option><option value="4-CL"></option>
         <option value="5-CL"></option><option value="6-CL"></option><option value="OFF"></option>
         <option value="F"></option>
+        <option value="11:00-CL"></option><option value="11:00-18:00"></option><option value="11:00-20:00"></option>
+        <option value="11:00-22:00"></option><option value="12:00-20:00"></option><option value="14:00-22:00"></option>
+        <option value="16:00-CL"></option><option value="17:00-CL"></option>
       </datalist>
       <canvas id="schedCanvas" style="display:none"></canvas>
     </section>
@@ -569,6 +610,20 @@ html[data-theme="dark"] .sched-input.cell-f{background:#3d1d1a;color:#f0857a;bor
           <p>Manuales, fichas técnicas y menú de la casa. Aquí también está la guía para subir cada semana.</p>
         </div>
       </div>
+      <div class="card">
+        <h3>Subir documento</h3>
+        <p class="card-sub">El archivo se guarda en Supabase Storage (bucket "documentos") y queda disponible para ver y descargar desde la app. Antes de subir por primera vez, corre el archivo <b>Supabase-Cantaros-Documentos-Storage.sql</b> en el SQL Editor de Supabase.</p>
+        <form id="docForm">
+          <div class="form-grid">
+            <div class="full"><label for="docFile">Archivo</label><input type="file" id="docFile" accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg" required></div>
+            <div><label for="docTitle">Título</label><input type="text" id="docTitle" placeholder="Ej. Manual de capacitación" required></div>
+            <div><label for="docCategory">Categoría</label><select id="docCategory"><option value="manual">Manual</option><option value="ficha_tecnica">Ficha técnica</option><option value="menu">Menú</option><option value="otro">Otro</option></select></div>
+            <div class="full"><label for="docNote">Nota (opcional)</label><input type="text" id="docNote" placeholder="Ej. Versión corregida a noviembre 2026"></div>
+          </div>
+          <div style="margin-top:14px"><button class="btn" type="submit" id="docSubmit">Subir documento</button></div>
+          <div class="form-msg" id="docMsg"></div>
+        </form>
+      </div>
       <div id="docsList"></div>
       <div class="card">
         <h3>Guía de carga semanal</h3>
@@ -576,13 +631,13 @@ html[data-theme="dark"] .sched-input.cell-f{background:#3d1d1a;color:#f0857a;bor
         <h3 style="font-size:15px;margin-top:14px">📄 Ventas (reporte de Soft Restaurant)</h3>
         <ol class="steps">
           <li><b>Opción A — pegar en Supabase:</b> en el panel de Supabase abre <code class="inline">Table Editor → ventas_pos_import → Insert → Paste rows</code> y pega el CSV del reporte tal cual (columnas CLAVE, DESCRIPCION, GRUPO, PRECIO, CANTIDAD, VENTA_TOTAL, COSTO, COSTO_TOTAL, VENTA_COSTO, PRECIO_DE_VENTA, PRECIO_DE_CATALOGO, VENTA_TOTAL_PRECIO_CATALOGO, TASA_IVA), con la semana puesta en <code class="inline">week_start</code>. La app cruza con el catálogo y calcula costo y margen.</li>
-          <li><b>Opción B — subir el archivo en esta app:</b> en <b>Captura semanal → Subir reporte de Soft Restaurant (CSV)</b>, elige la semana y el archivo CSV. La app guarda el staging y genera las ventas con costo automáticamente.</li>
+          <li><b>Opción B — subir el archivo en esta app:</b> en <b>Captura semanal → Subir reporte de Soft Restaurant (Excel o CSV)</b>, elige la semana y el archivo Excel (.xlsx) o CSV. La app guarda el staging y genera las ventas con costo automáticamente.</li>
           <li>Si se pega dos veces la misma semana, la base la rechaza (unique por semana + clave). Para corregirla, se borra esa semana y se vuelve a subir.</li>
         </ol>
         <h3 style="font-size:15px;margin-top:18px">🍺 Inventario de barra y cocina</h3>
         <ol class="steps">
           <li><b>Opción A — pegar en Supabase:</b> en <code class="inline">Table Editor → inventory_weekly</code> (barra) o <code class="inline">inventory_cocina</code> (cocina), pega las filas de la semana. Solo captura Inicial, Compras, Almacén, Display, Barra y Venta; el resto (total, diferencia, perdido, sobrante y sus $) se calcula solo.</li>
-          <li><b>Opción B — subir el archivo en esta app:</b> en <b>Captura semanal → Subir conteo de inventario (CSV)</b>, elige el área, la semana y el archivo. También puedes capturar un producto a la vez en <b>Conteo de inventario (una fila)</b>.</li>
+          <li><b>Opción B — subir el archivo en esta app:</b> en <b>Captura semanal → Subir conteo de inventario (Excel o CSV)</b>, elige el área, la semana y el archivo Excel (.xls/.xlsx) o CSV de la semana. El inventario ya no se captura a mano: siempre se sube el archivo.</li>
           <li>El sobrante también vale dinero: esta semana el sobrante de barra es $5,592, más que el faltante ($2,253). Revisa los sobrantes grandes (Miller Caguama +59, Tecate Roja Media +58): pueden ser errores de captura o compras no registradas.</li>
         </ol>
         <h3 style="font-size:15px;margin-top:18px">🧾 Ventas por mesero, cortesías y descuentos</h3>
@@ -594,8 +649,14 @@ html[data-theme="dark"] .sched-input.cell-f{background:#3d1d1a;color:#f0857a;bor
         <ol class="steps">
           <li>Antes de usar la vista <b>Horarios</b> por primera vez, corre el archivo <code class="inline">Supabase-Cantaros-Horarios.sql</code> en Supabase → SQL Editor (crea las tablas <code class="inline">staff</code>, <code class="inline">horarios</code> y <code class="inline">eventos</code> y siembra los 18 nombres del personal).</li>
           <li>Después expón las tres tablas en Supabase → <b>Integrations → Data API</b> (o activa "Default privileges for new entities") para que la app las pueda leer y escribir.</li>
-          <li>Los turnos se escriben directo en la tabla (códigos: 11-CL, 10-CL, 12-CL, 2-CL, 3-CL, 4-CL, 5-CL, 6-CL, OFF, F) y se guardan solos al cambiar de celda. Si una semana no tiene turnos, las celdas quedan vacías: nunca se copia otra semana.</li>
-          <li>Los eventos especiales y reservaciones grandes se agregan en la misma vista y aparecen en la columna de su día. El botón <b>Exportar imagen (PNG)</b> descarga la tabla de la semana lista para compartir por WhatsApp.</li>
+          <li>Los turnos se escriben directo en la tabla, libres: <b>11-CL</b> (entrada a cierre), <b>11:00-20:00</b> (entrada y salida), <b>OFF</b> (descanso), <b>F</b> (falta); se guardan solos al cambiar de celda. Si una semana no tiene turnos, las celdas quedan vacías: nunca se copia otra semana.</li>
+          <li>Los eventos especiales y reservaciones grandes se agregan en la misma vista y aparecen en la columna de su día. Arriba de la tabla están los botones <b>Ver imagen</b> (muestra la tabla lista para guardar o compartir por WhatsApp), <b>Exportar Excel</b> (descarga el .xlsx de la semana) y <b>Exportar PDF</b> (abre la vista para imprimir o guardar como PDF).</li>
+        </ol>
+        <h3 style="font-size:15px;margin-top:18px">📚 Documentos</h3>
+        <ol class="steps">
+          <li>Antes de subir el primer archivo, corre el archivo <code class="inline">Supabase-Cantaros-Documentos-Storage.sql</code> en Supabase → SQL Editor (crea el bucket público <code class="inline">documentos</code> y sus políticas, y agrega las columnas <code class="inline">file_url</code> y <code class="inline">file_path</code> a la tabla <code class="inline">documents</code>).</li>
+          <li>Después sube el archivo aquí mismo, en <b>Documentos → Subir documento</b> (archivo + título + categoría + nota). Cada documento muestra los botones <b>Ver</b> (abre el archivo en una pestaña) y <b>Descargar</b>.</li>
+          <li>Si la subida falla diciendo que el bucket no existe, es que falta el paso 1.</li>
         </ol>
       </div>
     </section>
@@ -611,6 +672,20 @@ html[data-theme="dark"] .sched-input.cell-f{background:#3d1d1a;color:#f0857a;bor
     <button data-view="docs"><span class="ic">📚</span>Docs</button>
   </nav>
 </div>
+
+<!-- ============ MODAL VER IMAGEN (horarios) ============ -->
+<div class="modal-overlay" id="imgModal" style="display:none">
+  <div class="modal">
+    <div class="modal-head"><h3 id="imgModalTitle">Horarios de la semana</h3><button class="btn ghost small" id="imgModalClose" type="button">✕ Cerrar</button></div>
+    <img id="imgModalImg" alt="Horarios de la semana">
+    <div class="modal-actions">
+      <a class="btn" id="imgModalDownload" href="#" download>⬇ Descargar PNG</a>
+      <button class="btn ghost" id="imgModalClose2" type="button">Cerrar</button>
+    </div>
+    <p class="small muted" style="margin:10px 0 0">En el teléfono, mantén presionada la imagen para guardarla o compartirla por WhatsApp.</p>
+  </div>
+</div>
+
 <script>
 'use strict';
 /* ================================================================
@@ -638,10 +713,11 @@ let LIVE_ERROR = null;
 const state = {
   weeks: [],            // filas de ventas_semanales, desc por week_start
   selectedWeek: FALLBACK_WEEK,
+  period: 'semana',     // periodo del panel: semana | mes | anio
   horariosWeek: toISODate(mondayOf(new Date())), // semana propia de Horarios (independiente del selector general)
   products: [],
   productsByClave: {},
-  salesRows: [],        // weekly_sales de la semana seleccionada
+  salesRows: [],        // weekly_sales del periodo seleccionado
   salesDesc: {},        // pos_clave -> descripcion (de ventas_pos_import)
   invResumen: [],       // inventario_semanal_resumen
   invBarra: [], invCocina: [],
@@ -650,6 +726,9 @@ const state = {
   staff: [], horarios: [], eventos: [],
   horariosReady: false,
   loaded: false,
+  prodSort: { key: 'neta', dir: -1 },   // orden de la tabla "Productos vendidos"
+  groupSort: { key: 'neta', dir: -1 },  // orden de la tabla "Top por grupo"
+  prodQuery: '',                        // buscador de "Productos vendidos"
 };
 
 /* ---------------- utilidades ---------------- */
@@ -680,7 +759,11 @@ async function sb(resource, opts){
   if (opts.select) qs.set('select', opts.select);
   if (opts.order) qs.set('order', opts.order);
   if (opts.limit) qs.set('limit', String(opts.limit));
-  if (opts.query) Object.keys(opts.query).forEach(k => qs.set(k, opts.query[k]));
+  if (opts.query) Object.keys(opts.query).forEach(k => {
+    const v = opts.query[k];
+    if (Array.isArray(v)) v.forEach(x => qs.append(k, x)); // rangos: week_start=gte.…&week_start=lte.…
+    else qs.set(k, v);
+  });
   const url = CFG.url.replace(/\/$/, '') + '/rest/v1/' + resource + (qs.toString() ? '?' + qs.toString() : '');
   const headers = { apikey: CFG.anonKey, Authorization: 'Bearer ' + CFG.anonKey, Accept: 'application/json' };
   if (opts.prefer) headers.Prefer = opts.prefer;
@@ -701,6 +784,36 @@ async function sbChunks(resource, rows, opts){
     if (Array.isArray(r)) out.push.apply(out, r);
   }
   return out;
+}
+
+/* ---------------- Excel (SheetJS, carga perezosa desde CDN) ---------------- */
+// Se carga solo cuando se necesita (subidas o exportar horarios). Si el
+// CDN no responde, se muestra un mensaje claro y la app sigue funcionando.
+let xlsxPromise = null;
+function ensureXLSX(){
+  if (window.XLSX) return Promise.resolve(window.XLSX);
+  if (xlsxPromise) return xlsxPromise;
+  xlsxPromise = new Promise((resolve, reject) => {
+    const s = document.createElement('script');
+    s.src = 'https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js';
+    s.onload = () => { if (window.XLSX) resolve(window.XLSX); else reject(new Error('La librería de Excel no se cargó.')); };
+    s.onerror = () => reject(new Error('No se pudo cargar la librería de Excel (revisa tu conexión e inténtalo de nuevo).'));
+    document.head.appendChild(s);
+  });
+  return xlsxPromise;
+}
+// Lee un archivo .csv, .xls o .xlsx y devuelve sus filas como arreglos
+// (primera hoja del libro en el caso de Excel).
+async function readSpreadsheetFile(file){
+  const name = String(file.name || '').toLowerCase();
+  if (name.endsWith('.xlsx') || name.endsWith('.xls')) {
+    const XLSX = await ensureXLSX();
+    const buf = await file.arrayBuffer();
+    const wb = XLSX.read(buf, { type: 'array' });
+    const ws = wb.Sheets[wb.SheetNames[0]];
+    return XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
+  }
+  return parseCSV(await file.text());
 }
 
 /* ---------------- estado de conexión ---------------- */
@@ -773,11 +886,15 @@ function buildWeekSelector(){
 async function loadWeekData(){
   if (!LIVE) return;
   const w = state.selectedWeek;
+  const range = periodRange();
+  const q = range.mode === 'eq'
+    ? { week_start: 'eq.' + w }
+    : { week_start: ['gte.' + range.gte, 'lte.' + range.lte] };
   try {
-    state.salesRows = await sb('weekly_sales', { select: '*', query: { week_start: 'eq.' + w }, order: 'total.desc', limit: 1000 }) || [];
+    state.salesRows = await sb('weekly_sales', { select: '*', query: q, order: 'total.desc', limit: 5000 }) || [];
   } catch (e) { state.salesRows = []; }
   try {
-    const imp = await sb('ventas_pos_import', { select: 'clave,descripcion', query: { week_start: 'eq.' + w }, limit: 1000 }) || [];
+    const imp = await sb('ventas_pos_import', { select: 'clave,descripcion', query: q, limit: 5000 }) || [];
     state.salesDesc = {}; imp.forEach(r => { state.salesDesc[String(r.clave)] = r.descripcion; });
   } catch (e) { state.salesDesc = {}; }
   // Inventario: la semana seleccionada si tiene conteos; si no, la última con conteos.
@@ -790,6 +907,85 @@ async function loadWeekData(){
   try { state.invCocina = await sb('inventory_cocina', { select: '*', query: { week_start: 'eq.' + invWC }, order: 'producto.asc', limit: 1000 }) || []; }
   catch (e) { state.invCocina = []; }
   await loadHorariosData();
+}
+/* ---------------- periodo del panel: Semana | Mes | Año ---------------- */
+// El panel agrega las semanas cargadas dentro del periodo; el inventario
+// y la captura siguen siendo semanales (usan state.selectedWeek).
+function periodRange(){
+  const p = state.selectedWeek.split('-').map(Number);
+  if (state.period === 'mes') {
+    const last = new Date(p[0], p[1], 0).getDate();
+    const m = String(p[1]).padStart(2, '0');
+    return { mode: 'range', gte: p[0] + '-' + m + '-01', lte: p[0] + '-' + m + '-' + String(last).padStart(2, '0') };
+  }
+  if (state.period === 'anio') return { mode: 'range', gte: p[0] + '-01-01', lte: p[0] + '-12-31' };
+  return { mode: 'eq' };
+}
+function periodLabel(){
+  const p = state.selectedWeek.split('-').map(Number);
+  if (state.period === 'mes') return 'Mes de ' + MESES[p[1] - 1] + ' ' + p[0];
+  if (state.period === 'anio') return 'Año ' + p[0];
+  return 'Semana del ' + fmtWeek(state.selectedWeek);
+}
+function periodLabelShort(){
+  return state.period === 'semana' ? 'semana' : (state.period === 'mes' ? 'mes' : 'año');
+}
+// Filas de ventas_semanales dentro del periodo seleccionado.
+function periodWeeks(){
+  if (state.period === 'semana') return state.weeks.filter(w => w.week_start === state.selectedWeek);
+  if (state.period === 'mes') { const ym = state.selectedWeek.slice(0, 7); return state.weeks.filter(w => w.week_start.slice(0, 7) === ym); }
+  const y = state.selectedWeek.slice(0, 4); return state.weeks.filter(w => w.week_start.slice(0, 4) === y);
+}
+function sumWeeks(rows){
+  if (!rows.length) return null;
+  const sum = k => rows.reduce((a, w) => a + num(w[k]), 0);
+  const netaCub = sum('venta_neta_cubierta'), margen = sum('margen');
+  return { week_start: state.selectedWeek, productos: sum('productos'), unidades: sum('unidades'),
+    venta_con_iva: sum('venta_con_iva'), venta_neta: sum('venta_neta'), venta_neta_cubierta: netaCub,
+    costo_teorico: sum('costo_teorico'), margen: margen, margen_pct: netaCub ? margen / netaCub : 0 };
+}
+function periodAgg(){ return sumWeeks(periodWeeks()); }
+// Agregado del periodo anterior (semana, mes o año anterior al seleccionado).
+function prevPeriodAgg(){
+  const p = state.selectedWeek.split('-').map(Number);
+  const d = new Date(p[0], p[1] - 1, p[2]);
+  if (state.period === 'semana') d.setDate(d.getDate() - 7);
+  else if (state.period === 'mes') d.setMonth(d.getMonth() - 1);
+  else d.setFullYear(d.getFullYear() - 1);
+  const ref = toISODate(mondayOf(d));
+  const rows = state.weeks.filter(w => {
+    if (state.period === 'semana') return w.week_start === ref;
+    if (state.period === 'mes') return w.week_start.slice(0, 7) === ref.slice(0, 7);
+    return w.week_start.slice(0, 4) === ref.slice(0, 4);
+  });
+  return rows.length ? sumWeeks(rows) : null;
+}
+function prevPeriodLabel(){
+  const p = state.selectedWeek.split('-').map(Number);
+  const d = new Date(p[0], p[1] - 1, p[2]);
+  if (state.period === 'semana') { d.setDate(d.getDate() - 7); return 'la semana del ' + fmtWeek(toISODate(mondayOf(d))); }
+  if (state.period === 'mes') { d.setMonth(d.getMonth() - 1); return 'el mes de ' + MESES[d.getMonth()] + ' ' + d.getFullYear(); }
+  d.setFullYear(d.getFullYear() - 1); return 'el año ' + d.getFullYear();
+}
+// Serie de periodos reales para la tendencia y la evolución histórica,
+// agrupada según el periodo elegido (semanas, meses o años).
+function periodSeries(){
+  if (state.period === 'semana') {
+    return state.weeks.slice().sort((a, b) => String(a.week_start).localeCompare(String(b.week_start)))
+      .map(w => ({ label: fmtWeek(w.week_start), venta_neta: num(w.venta_neta), margen: num(w.margen), margen_pct: num(w.margen_pct) }));
+  }
+  const key = state.period === 'mes' ? (w => w.week_start.slice(0, 7)) : (w => w.week_start.slice(0, 4));
+  const label = state.period === 'mes'
+    ? (k => { const p = k.split('-'); return MESES[Number(p[1]) - 1] + ' ' + p[0]; })
+    : (k => k);
+  const agg = {};
+  state.weeks.forEach(w => {
+    const k = key(w);
+    if (!agg[k]) agg[k] = { label: label(k), venta_neta: 0, margen: 0, neta_cub: 0 };
+    agg[k].venta_neta += num(w.venta_neta); agg[k].margen += num(w.margen); agg[k].neta_cub += num(w.venta_neta_cubierta);
+  });
+  return Object.keys(agg).sort().map(k => ({ label: agg[k].label, venta_neta: agg[k].venta_neta, margen: agg[k].margen,
+    margen_pct: agg[k].neta_cub ? agg[k].margen / agg[k].neta_cub : 0 }));
 }
 function pickInvWeek(area){
   const rows = state.invResumen.filter(r => r.area === area);
@@ -832,28 +1028,26 @@ function animateNum(el, target){
 }
 
 /* ---------------- PANEL EJECUTIVO ---------------- */
-function weekRow(week){
-  return state.weeks.find(w => w.week_start === week) || null;
-}
 function renderPanel(){
-  const row = weekRow(state.selectedWeek);
-  $('panelSubtitle').innerHTML = 'Semana del ' + fmtWeek(state.selectedWeek) + ' · Ventas de barra (Soft Restaurant) · ' +
+  const row = periodAgg();
+  $('panelSubtitle').innerHTML = periodLabel() + ' · Ventas de barra (Soft Restaurant) · ' +
     (LIVE ? '<span class="badge green" id="liveBadge">en vivo · Supabase</span>' : '<span class="badge grey" id="liveBadge">últimos datos conocidos</span>');
   if (!row) {
-    // Semana sin ventas cargadas: vaciar KPIs y mostrar estado vacío.
+    // Periodo sin ventas cargadas: vaciar KPIs y mostrar estado vacío.
     ['kVentaNeta','kCosto','kMargen'].forEach(id => { $(id).textContent = '—'; });
     ['kUnidades','kConCosto'].forEach(id => { $(id).textContent = '—'; });
     $('kPpu').textContent = '—';
-    $('kVentaNetaSub').textContent = 'Sin ventas cargadas esta semana';
+    $('kVentaNetaSub').textContent = 'Sin ventas cargadas en este periodo';
     $('kCostoSub').textContent = '—'; $('kMargenSub').textContent = '—';
     $('kUnidadesSub').textContent = '—'; $('kConCostoSub').textContent = '—';
-    $('compareBox').innerHTML = '<div class="empty">Esta semana aún no tiene ventas cargadas.<br>Sube el reporte de Soft Restaurant en <b>Captura semanal</b>.</div>';
-    $('groupBox').innerHTML = '<div class="empty">Sin datos de ventas para esta semana.</div>';
-    $('topTable').querySelector('tbody').innerHTML = '<tr><td colspan="7" class="muted">Sin datos de ventas para esta semana.</td></tr>';
+    $('compareBox').innerHTML = '<div class="empty">Este periodo aún no tiene ventas cargadas.<br>Sube el reporte de Soft Restaurant en <b>Captura semanal</b>.</div>';
+    $('groupBox').innerHTML = '<div class="empty">Sin datos de ventas para este periodo.</div>';
+    $('topTable').querySelector('tbody').innerHTML = '<tr><td colspan="7" class="muted">Sin datos de ventas para este periodo.</td></tr>';
     $('donutSvg').innerHTML = ''; $('donutLegend').innerHTML = '<span class="muted">Sin datos.</span>';
     $('noCostBox').innerHTML = '<div class="empty">Sin datos.</div>';
     renderTrend();
     renderAlerts();
+    renderStars(); renderGroupTop(); renderProductsTable(); renderHistory();
     return;
   }
   animateMoney($('kVentaNeta'), row.venta_neta);
@@ -863,7 +1057,8 @@ function renderPanel(){
   animateMoney($('kMargen'), row.margen);
   $('kMargenSub').textContent = fmtPct(row.margen_pct) + ' sobre lo costeado';
   animateNum($('kUnidades'), row.unidades);
-  $('kUnidadesSub').textContent = fmtNum(row.productos) + ' productos con venta';
+  const distinct = new Set(state.salesRows.map(r => r.pos_clave).filter(x => x != null));
+  $('kUnidadesSub').textContent = fmtNum(distinct.size || state.salesRows.length) + ' productos con venta';
   $('kPpu').textContent = row.unidades ? fmtMoney(row.venta_neta / row.unidades) : '—';
   const withCost = state.salesRows.filter(r => r.unit_cost != null).length;
   const totalRows = state.salesRows.length || row.productos;
@@ -876,17 +1071,17 @@ function renderPanel(){
   renderTop();
   renderAlerts();
   renderNoCost();
+  renderStars(); renderGroupTop(); renderProductsTable(); renderHistory();
 }
 function renderCompare(row){
   const box = $('compareBox');
-  const idx = state.weeks.findIndex(w => w.week_start === row.week_start);
-  const prev = idx >= 0 ? state.weeks[idx + 1] : null; // weeks vienen desc
+  const prev = prevPeriodAgg();
   if (!prev) {
-    box.innerHTML = '<div class="empty">Aún no hay una semana anterior para comparar.<br>Cuando se suba la siguiente semana, aquí verás la diferencia en $ y %.</div>';
+    box.innerHTML = '<div class="empty">Aún no hay un periodo anterior para comparar.<br>Cuando se cargue el siguiente periodo, aquí verás la diferencia en $ y %.</div>';
     $('compareSub').textContent = 'Venta neta, margen y unidades, en $ y %.';
     return;
   }
-  $('compareSub').textContent = 'Contra la semana del ' + fmtWeek(prev.week_start) + '.';
+  $('compareSub').textContent = 'Contra ' + prevPeriodLabel() + '.';
   box.innerHTML =
     '<div class="bar-row"><span class="bar-label">Venta neta</span><span class="bar-val">' + deltaHtml(row.venta_neta, prev.venta_neta) + '</span></div>' +
     '<div class="bar-row"><span class="bar-label">Margen bruto</span><span class="bar-val">' + deltaHtml(row.margen, prev.margen) + '</span></div>' +
@@ -895,16 +1090,17 @@ function renderCompare(row){
 }
 function renderTrend(){
   const box = $('trendBox');
-  if (!state.weeks.length) { box.innerHTML = '<div class="empty">Aún no hay semanas cargadas.</div>'; return; }
-  const asc = state.weeks.slice().sort((a, b) => String(a.week_start).localeCompare(String(b.week_start)));
-  const max = Math.max.apply(null, asc.map(w => Number(w.venta_neta) || 0)) || 1;
-  box.innerHTML = '<div class="trend">' + asc.map(w => {
-    const h = Math.max(4, Math.round(Number(w.venta_neta) / max * 110));
-    return '<div class="trend-col"><div class="trend-val">' + fmtMoney(w.venta_neta) + '</div>' +
+  $('trendSub').textContent = 'Venta neta por ' + periodLabelShort() + ' cargada en la base. Solo periodos reales.';
+  const series = periodSeries();
+  if (!series.length) { box.innerHTML = '<div class="empty">Aún no hay periodos cargados.</div>'; return; }
+  const max = Math.max.apply(null, series.map(s => Number(s.venta_neta) || 0)) || 1;
+  box.innerHTML = '<div class="trend">' + series.map(s => {
+    const h = Math.max(4, Math.round(Number(s.venta_neta) / max * 110));
+    return '<div class="trend-col"><div class="trend-val">' + fmtMoney(s.venta_neta) + '</div>' +
       '<div class="trend-bar" style="height:' + h + 'px"></div>' +
-      '<div class="trend-lab">' + fmtWeek(w.week_start) + '</div></div>';
+      '<div class="trend-lab">' + esc(s.label) + '</div></div>';
   }).join('') + '</div>' +
-  (asc.length === 1 ? '<p class="small muted" style="margin-top:10px">Solo hay una semana cargada. La tendencia se dibuja sola cuando se suba la segunda.</p>' : '');
+  (series.length === 1 ? '<p class="small muted" style="margin-top:10px">Solo hay un periodo cargado. La tendencia se dibuja sola cuando se cargue el siguiente.</p>' : '');
 }
 function renderGroups(){
   const box = $('groupBox');
@@ -979,6 +1175,134 @@ function renderNoCost(){
   }).join('') + '<p class="small muted" style="margin-top:10px">Pide el precio al proveedor para poder costearlos.</p>';
 }
 
+/* ---------------- PANEL: productos, estrella, grupos, evolución ---------------- */
+// Agrega las ventas del periodo por producto (misma clave base agrupa
+// los renglones POS que comparten costo, ej. las aguas frescas).
+function productAgg(){
+  const agg = {};
+  state.salesRows.forEach(r => {
+    const key = r.product_clave || ('POS-' + r.pos_clave);
+    const p = state.productsByClave[r.product_clave];
+    const name = p ? p.nombre : (state.salesDesc[String(r.pos_clave)] || ('Clave POS ' + (r.pos_clave || '—')));
+    const grupo = p && p.grupo ? p.grupo : 'Sin grupo';
+    const neta = num(r.total) / 1.08, costo = r.unit_cost == null ? null : num(r.qty) * num(r.unit_cost);
+    const a = agg[key] || (agg[key] = { nombre: name, grupo: grupo, unidades: 0, neta: 0, costo: 0, hasCost: true });
+    a.unidades += num(r.qty); a.neta += neta;
+    if (costo == null) a.hasCost = false; else a.costo += costo;
+  });
+  return Object.keys(agg).map(k => {
+    const a = agg[k];
+    const margen = a.hasCost ? a.neta - a.costo : null;
+    return { nombre: a.nombre, grupo: a.grupo, unidades: a.unidades, neta: a.neta,
+      costo: a.hasCost ? a.costo : null, margen: margen,
+      margenPct: margen == null || !a.neta ? null : margen / a.neta };
+  });
+}
+// Ordena filas por clave; los nulos siempre quedan al final.
+function sortRows(rows, key, dir){
+  return rows.slice().sort((a, b) => {
+    const va = a[key], vb = b[key];
+    if (va == null && vb == null) return 0;
+    if (va == null) return 1;
+    if (vb == null) return -1;
+    if (typeof va === 'string') return dir * va.localeCompare(vb, 'es');
+    return dir * (va - vb);
+  });
+}
+function markSort(tableId, sort){
+  document.querySelectorAll('#' + tableId + ' th[data-sort]').forEach(th => {
+    const k = th.getAttribute('data-sort');
+    th.textContent = th.textContent.replace(/ [▲▼]$/, '');
+    if (k === sort.key) th.textContent += sort.dir > 0 ? ' ▲' : ' ▼';
+  });
+}
+function renderStars(){
+  const box = $('starsBox');
+  const rows = productAgg().sort((a, b) => b.neta - a.neta).slice(0, 5);
+  if (!rows.length) { box.innerHTML = '<div class="empty">Sin datos de ventas para este periodo.</div>'; return; }
+  box.innerHTML = rows.map((r, i) =>
+    '<div class="bar-row"><span class="bar-label">' + (i + 1) + '. ' + esc(r.nombre) + ' <span class="muted">(' + fmtNum(r.unidades) + ' uds)</span></span>' +
+    '<span class="bar-val">' + fmtMoney(r.neta) + (r.margen != null ? ' · <span style="color:var(--accent-text)">' + fmtMoney(r.margen) + '</span>' : '') + '</span></div>'
+  ).join('');
+}
+function renderGroupTop(){
+  const agg = {};
+  state.salesRows.forEach(r => {
+    const p = state.productsByClave[r.product_clave];
+    const g = p && p.grupo ? p.grupo : 'Sin grupo';
+    const neta = num(r.total) / 1.08, costo = r.unit_cost == null ? null : num(r.qty) * num(r.unit_cost);
+    const a = agg[g] || (agg[g] = { grupo: g, neta: 0, unidades: 0, margen: 0, hasCost: true });
+    a.neta += neta; a.unidades += num(r.qty);
+    if (costo == null) a.hasCost = false; else a.margen += neta - costo;
+  });
+  const total = Object.keys(agg).reduce((s, k) => s + agg[k].neta, 0) || 1;
+  const rows = Object.keys(agg).map(k => ({ grupo: agg[k].grupo, neta: agg[k].neta, unidades: agg[k].unidades,
+    margen: agg[k].hasCost ? agg[k].margen : null, pct: agg[k].neta / total }));
+  const sorted = sortRows(rows, state.groupSort.key, state.groupSort.dir);
+  const tb = $('groupTopTable').querySelector('tbody');
+  markSort('groupTopTable', state.groupSort);
+  if (!rows.length) { tb.innerHTML = '<tr><td colspan="5" class="muted">Sin datos de ventas para este periodo.</td></tr>'; return; }
+  tb.innerHTML = sorted.map(r =>
+    '<tr><td>' + esc(r.grupo) + '</td><td class="num money">' + fmtMoney(r.neta) + '</td>' +
+    '<td class="num">' + fmtNum(r.unidades) + '</td><td class="num money">' + (r.margen == null ? '—' : fmtMoney(r.margen)) + '</td>' +
+    '<td class="num">' + fmtPct(r.pct) + '</td></tr>'
+  ).join('');
+}
+function renderProductsTable(){
+  const rows = productAgg();
+  const q = (state.prodQuery || '').toLowerCase();
+  const filtered = rows.filter(r => !q || r.nombre.toLowerCase().indexOf(q) !== -1 || r.grupo.toLowerCase().indexOf(q) !== -1);
+  const sorted = sortRows(filtered, state.prodSort.key, state.prodSort.dir);
+  const tb = $('productsTable').querySelector('tbody');
+  markSort('productsTable', state.prodSort);
+  $('prodCount').textContent = filtered.length + ' de ' + rows.length + ' productos';
+  if (!rows.length) { tb.innerHTML = '<tr><td colspan="7" class="muted">Sin datos de ventas para este periodo.</td></tr>'; return; }
+  if (!filtered.length) { tb.innerHTML = '<tr><td colspan="7" class="muted">Nada coincide con la búsqueda.</td></tr>'; return; }
+  tb.innerHTML = sorted.map(r =>
+    '<tr><td>' + esc(r.nombre) + '</td><td>' + esc(r.grupo) + '</td>' +
+    '<td class="num">' + fmtNum(r.unidades) + '</td><td class="num money">' + fmtMoney(r.neta) + '</td>' +
+    '<td class="num money">' + (r.costo == null ? '—' : fmtMoney(r.costo)) + '</td>' +
+    '<td class="num money">' + (r.margen == null ? '—' : fmtMoney(r.margen)) + '</td>' +
+    '<td class="num">' + (r.margenPct == null ? '—' : fmtPct(r.margenPct)) + '</td></tr>'
+  ).join('');
+}
+function renderHistory(){
+  const series = periodSeries();
+  const chart = $('historyChart'), tb = $('historyTable').querySelector('tbody');
+  $('historySub').textContent = 'Venta neta y margen por ' + periodLabelShort() + ' cargado. Solo periodos reales.';
+  if (!series.length) {
+    chart.innerHTML = '<div class="empty">Aún no hay periodos cargados.</div>';
+    tb.innerHTML = '<tr><td colspan="4" class="muted">Sin datos.</td></tr>';
+    return;
+  }
+  const W = 720, H = 220, padL = 74, padB = 34, padT = 26;
+  const max = Math.max.apply(null, series.map(s => Math.max(s.venta_neta, s.margen))) || 1;
+  const groupW = (W - padL - 16) / series.length;
+  const bw = Math.max(6, Math.min(30, (groupW - 14) / 2));
+  const gap = 6;
+  const baseY = H - padB, scale = (H - padB - padT) / max;
+  let svg = '<svg viewBox="0 0 ' + W + ' ' + H + '" style="width:100%;height:auto" role="img" aria-label="Evolución de venta neta y margen">';
+  [0, 0.5, 1].forEach(f => {
+    const y = baseY - max * f * scale;
+    svg += '<line x1="' + padL + '" y1="' + y.toFixed(1) + '" x2="' + (W - 8) + '" y2="' + y.toFixed(1) + '" stroke="var(--border)" stroke-width="1"/>' +
+      '<text x="' + (padL - 8) + '" y="' + (y + 4).toFixed(1) + '" text-anchor="end" font-size="11" fill="var(--muted)">' + fmtMoney(max * f) + '</text>';
+  });
+  series.forEach((s, i) => {
+    const x0 = padL + i * groupW + (groupW - 2 * bw - gap) / 2;
+    const hN = Math.max(2, s.venta_neta * scale), hM = Math.max(2, s.margen * scale);
+    svg += '<rect x="' + x0.toFixed(1) + '" y="' + (baseY - hN).toFixed(1) + '" width="' + bw + '" height="' + hN.toFixed(1) + '" rx="3" fill="var(--accent)"/>' +
+      '<rect x="' + (x0 + bw + gap).toFixed(1) + '" y="' + (baseY - hM).toFixed(1) + '" width="' + bw + '" height="' + hM.toFixed(1) + '" rx="3" fill="var(--gold)"/>' +
+      '<text x="' + (x0 + bw + gap / 2).toFixed(1) + '" y="' + (H - 12) + '" text-anchor="middle" font-size="11.5" fill="var(--muted)">' + esc(s.label) + '</text>';
+  });
+  svg += '<text x="' + (padL + 4) + '" y="16" font-size="12" font-weight="700" fill="var(--accent-text)">■ Venta neta</text>' +
+    '<text x="' + (padL + 110) + '" y="16" font-size="12" font-weight="700" fill="var(--gold)">■ Margen</text></svg>';
+  chart.innerHTML = svg;
+  tb.innerHTML = series.map(s =>
+    '<tr><td>' + esc(s.label) + '</td><td class="num money">' + fmtMoney(s.venta_neta) + '</td>' +
+    '<td class="num money">' + fmtMoney(s.margen) + '</td><td class="num">' + fmtPct(s.margen_pct) + '</td></tr>'
+  ).join('');
+}
+
 /* ---------------- INVENTARIO ---------------- */
 function invRowHtml(r){
   const lost = num(r.perdido_pesos) > 0, sur = num(r.sobrante_pesos) > 0;
@@ -1023,7 +1347,7 @@ function renderInventory(area){
   tb.innerHTML = html;
   // Sin conteos (plantilla vacía): avisar.
   if (rows.length && rows.every(r => r.valor_total == null && r.total == null)) {
-    tb.innerHTML = '<tr><td colspan="11"><div class="empty">Plantilla vacía: estos productos aún no tienen conteos esta semana.<br>Captúralos en <b>Captura semanal</b> o sube el CSV de la semana.</div></td></tr>';
+    tb.innerHTML = '<tr><td colspan="11"><div class="empty">Plantilla vacía: estos productos aún no tienen conteos esta semana.<br>Sube el archivo Excel de la semana en <b>Captura semanal</b>.</div></td></tr>';
   }
 }
 
@@ -1092,35 +1416,7 @@ function invDerived(v){
     pct_perdido: (num(v.inicial) + num(v.compras)) > 0 ? perdido / (num(v.inicial) + num(v.compras)) : 0,
     pct_sobrante: (num(v.inicial) + num(v.compras)) > 0 ? sobrante / (num(v.inicial) + num(v.compras)) : 0 };
 }
-async function submitInv(e){
-  e.preventDefault();
-  if (!LIVE) { $('invMsg').className = 'form-msg err'; $('invMsg').textContent = 'Sin conexión a Supabase: configura las variables en Vercel primero.'; return; }
-  const btn = $('invSubmit'); btn.disabled = true;
-  const area = $('iArea').value;
-  const v = { inicial: num($('iInicial').value), compras: num($('iCompras').value), almacen: num($('iAlmacen').value),
-    display: num($('iDisplay').value), barra: num($('iBarra').value), venta: num($('iVenta').value),
-    costo: num($('iCost').value), minimo: num($('iMin').value) };
-  const d = invDerived(v);
-  const row = { week_start: $('iWeek').value, seccion: $('iSection').value.trim() || null,
-    producto: $('iProduct').value.trim(), unidad: $('iUnit').value.trim() || null,
-    inicial: v.inicial, compras: v.compras, almacen: v.almacen, display: v.display, barra: v.barra,
-    venta: v.venta, total: d.total, diferencia: d.diferencia, minimo: v.minimo, perdido: d.perdido,
-    pedido: d.pedido, sobrante: d.sobrante, costo: v.costo, valor_total: d.valor_total,
-    perdido_pesos: d.perdido_pesos, pct_perdido: d.pct_perdido, sobrante_pesos: d.sobrante_pesos, pct_sobrante: d.pct_sobrante };
-  try {
-    await sb(area === 'barra' ? 'inventory_weekly' : 'inventory_cocina',
-      { method: 'POST', body: row, prefer: 'resolution=merge-duplicates,return=representation',
-        query: { on_conflict: 'week_start,producto' } });
-    $('invMsg').className = 'form-msg ok';
-    $('invMsg').textContent = 'Guardado: ' + row.producto + ' · Total ' + fmtNum(d.total) + ' · Perdido ' + fmtMoney(d.perdido_pesos) + ' · Sobrante ' + fmtMoney(d.sobrante_pesos) + '.';
-    await loadWeekData(); renderAll();
-  } catch (err) {
-    $('invMsg').className = 'form-msg err';
-    $('invMsg').textContent = 'No se pudo guardar: ' + err.message + (err.data && err.data.message ? ' · ' + err.data.message : '');
-  } finally { btn.disabled = false; }
-}
-
-/* ---------------- CSV ---------------- */
+/* ---------------- CSV / Excel ---------------- */
 function parseCSV(text){
   // Parser CSV con comillas, comas dentro de comillas y saltos \r\n.
   const rows = []; let cur = [], inQ = false, field = '';
@@ -1163,17 +1459,17 @@ async function uploadPOS(){
   if (!LIVE) { msg.className = 'form-msg err'; msg.textContent = 'Sin conexión a Supabase: configura las variables en Vercel primero.'; return; }
   const file = $('posFile').files[0];
   const week = $('posWeek').value;
-  if (!file) { msg.className = 'form-msg err'; msg.textContent = 'Elige el archivo CSV del reporte primero.'; return; }
+  if (!file) { msg.className = 'form-msg err'; msg.textContent = 'Elige el archivo del reporte primero.'; return; }
   if (!week) { msg.className = 'form-msg err'; msg.textContent = 'Elige la semana (lunes) del reporte.'; return; }
   const btn = $('posUploadBtn'); btn.disabled = true;
   msg.className = 'form-msg'; msg.textContent = 'Leyendo archivo…';
   try {
-    const rows = parseCSV(await file.text());
+    const rows = await readSpreadsheetFile(file);
     const headerAt = findHeaderRow(rows, 'clave');
-    if (headerAt === -1) throw new Error('El CSV no trae la columna CLAVE del reporte.');
+    if (headerAt === -1) throw new Error('El archivo no trae la columna CLAVE del reporte.');
     const idx = headerIndex(rows[headerAt]);
     if (idx.clave == null || idx.cantidad == null || idx.venta_total == null) {
-      throw new Error('El CSV no trae las columnas del reporte (CLAVE, CANTIDAD, VENTA_TOTAL).');
+      throw new Error('El archivo no trae las columnas del reporte (CLAVE, CANTIDAD, VENTA_TOTAL).');
     }
     const staging = [], sales = [];
     let noCost = [];
@@ -1222,20 +1518,25 @@ async function uploadInvCSV(){
   if (!LIVE) { msg.className = 'form-msg err'; msg.textContent = 'Sin conexión a Supabase: configura las variables en Vercel primero.'; return; }
   const file = $('csvFile').files[0];
   const area = $('csvArea').value, week = $('csvWeek').value;
-  if (!file) { msg.className = 'form-msg err'; msg.textContent = 'Elige el archivo CSV del conteo primero.'; return; }
+  if (!file) { msg.className = 'form-msg err'; msg.textContent = 'Elige el archivo del conteo primero.'; return; }
   if (!week) { msg.className = 'form-msg err'; msg.textContent = 'Elige la semana (lunes) del conteo.'; return; }
   const btn = $('csvUploadBtn'); btn.disabled = true;
   msg.className = 'form-msg'; msg.textContent = 'Leyendo archivo…';
   try {
-    const rows = parseCSV(await file.text());
+    const rows = await readSpreadsheetFile(file);
     const headerAt = findHeaderRow(rows, 'producto');
-    if (headerAt === -1) throw new Error('El CSV no trae la columna PRODUCTO.');
+    if (headerAt === -1) throw new Error('El archivo no trae la columna PRODUCTO.');
     const idx = headerIndex(rows[headerAt]);
     const out = [];
     for (let i = headerAt + 1; i < rows.length; i++) {
       const r = rows[i];
       const producto = String(pick(r, idx, ['producto']) || '').trim();
       if (!producto) continue;
+      // Saltar encabezados de sección ("CERVEZA", "ABARROTES"…) y el bloque
+      // de resumen: son filas con solo la primera columna llena.
+      const others = r.filter((c, j) => j !== idx.producto && String(c == null ? '' : c).trim() !== '');
+      if (!others.length) continue;
+      if (/^resumen/i.test(producto)) continue;
       const v = { inicial: num(pick(r, idx, ['inicial', 'inventario_inicial'])), compras: num(pick(r, idx, ['compras'])),
         almacen: num(pick(r, idx, ['almacen', 'almacén'])), display: num(pick(r, idx, ['display'])),
         barra: num(pick(r, idx, ['barra'])), venta: num(pick(r, idx, ['venta'])),
@@ -1273,15 +1574,61 @@ function renderDocs(){
       note: 'Gramajes y montaje de platillos de cocina, sin precios.' },
   ];
   const docs = (state.docs && state.docs.length) ? state.docs : FALLBACK_DOCS;
-  const catLabel = { manual: 'Manual', ficha_tecnica: 'Ficha técnica', menu: 'Menú' };
-  box.innerHTML = docs.map(d =>
-    '<div class="card doc-card"><div class="doc-ic">📄</div><div>' +
+  const catLabel = { manual: 'Manual', ficha_tecnica: 'Ficha técnica', menu: 'Menú', otro: 'Otro' };
+  box.innerHTML = docs.map(d => {
+    const hasFile = !!d.file_url;
+    return '<div class="card doc-card"><div class="doc-ic">📄</div><div style="flex:1">' +
     '<h3>' + esc(d.title) + '</h3>' +
     '<p class="small muted" style="margin:4px 0 8px">' + esc(d.note || '') + '</p>' +
     '<span class="badge ' + (d.category === 'manual' ? 'green' : 'blue') + '">' + esc(catLabel[d.category] || d.category || 'Documento') + '</span>' +
-    '</div></div>'
-  ).join('') +
-  '<p class="small muted">Los archivos (PDF / DOCX) se guardan en el repositorio de la empresa; esta lista muestra su título y su nota desde Supabase. Para agregar otro documento, insértalo en la tabla <b>documents</b> de Supabase.</p>';
+    (hasFile
+      ? ' <a class="btn ghost small" href="' + esc(d.file_url) + '" target="_blank" rel="noopener">Ver</a>' +
+        ' <a class="btn ghost small" href="' + esc(d.file_url) + '" download>Descargar</a>'
+      : ' <span class="small muted">Sin archivo subido aún</span>') +
+    '</div></div>';
+  }).join('') +
+  '<p class="small muted">Los documentos con archivo se abren y descargan desde Supabase Storage (bucket "documentos"). Si la subida falla con un error del bucket, corre el archivo <b>Supabase-Cantaros-Documentos-Storage.sql</b> en el SQL Editor.</p>';
+}
+// Sube el archivo a Supabase Storage y registra el documento en la tabla.
+async function uploadDoc(e){
+  e.preventDefault();
+  const msg = $('docMsg');
+  if (!LIVE) { msg.className = 'form-msg err'; msg.textContent = 'Sin conexión a Supabase.'; return; }
+  const file = $('docFile').files[0];
+  if (!file) { msg.className = 'form-msg err'; msg.textContent = 'Elige un archivo primero.'; return; }
+  const btn = $('docSubmit'); btn.disabled = true;
+  msg.className = 'form-msg'; msg.textContent = 'Subiendo archivo…';
+  try {
+    const safe = String(file.name).replace(/[^A-Za-z0-9._-]/g, '_');
+    const path = Date.now() + '-' + safe;
+    const base = CFG.url.replace(/\/$/, '');
+    const res = await fetch(base + '/storage/v1/object/documentos/' + encodeURIComponent(path), {
+      method: 'POST',
+      headers: { apikey: CFG.anonKey, Authorization: 'Bearer ' + CFG.anonKey,
+        'Content-Type': file.type || 'application/octet-stream' },
+      body: file });
+    if (!res.ok) {
+      const t = await res.text();
+      if (res.status === 404 || /bucket not found/i.test(t)) throw new Error('BUCKET_MISSING');
+      throw new Error('Storage ' + res.status + (t ? ' · ' + t.slice(0, 200) : ''));
+    }
+    const fileUrl = base + '/storage/v1/object/public/documentos/' + encodeURIComponent(path);
+    const title = $('docTitle').value.trim();
+    await sb('documents', { method: 'POST',
+      body: { title: title, category: $('docCategory').value, note: $('docNote').value.trim() || null,
+        file_url: fileUrl, file_path: path },
+      prefer: 'return=representation' });
+    msg.className = 'form-msg ok';
+    msg.textContent = 'Documento subido: ' + title + '. Ya se puede ver y descargar en la lista.';
+    $('docFile').value = ''; $('docTitle').value = ''; $('docNote').value = '';
+    state.docs = await sb('documents', { select: '*', order: 'title.asc' }) || [];
+    renderDocs();
+  } catch (err) {
+    msg.className = 'form-msg err';
+    msg.textContent = err.message === 'BUCKET_MISSING'
+      ? 'El bucket "documentos" aún no existe en Supabase. Corre el archivo Supabase-Cantaros-Documentos-Storage.sql en el SQL Editor y vuelve a intentar.'
+      : 'No se pudo subir: ' + err.message;
+  } finally { btn.disabled = false; }
 }
 
 /* ---------------- HORARIOS ---------------- */
@@ -1377,7 +1724,7 @@ function renderHorarios(){
           days.map(d => {
             const iso = toISODate(d);
             const v = shiftMap[s.id + '|' + iso] || '';
-            return '<td><input class="sched-input ' + shiftClass(v) + '" data-staff="' + s.id + '" data-dia="' + iso + '" value="' + esc(v) + '" list="shiftCodes" maxlength="6" autocomplete="off" spellcheck="false"></td>';
+            return '<td><input class="sched-input ' + shiftClass(v) + '" data-staff="' + s.id + '" data-dia="' + iso + '" value="' + esc(v) + '" list="shiftCodes" maxlength="11" autocomplete="off" spellcheck="false"></td>';
           }).join('') + '</tr>';
       });
     });
@@ -1466,8 +1813,8 @@ async function deleteEvent(id){
     $('eventMsg').textContent = 'No se pudo eliminar: ' + err.message;
   }
 }
-/* Exportar la tabla de la semana como PNG (canvas, sin librerías). */
-function exportSchedulePNG(){
+/* Dibuja la tabla de la semana en el canvas (la usan "Ver imagen" y la descarga PNG). */
+function drawScheduleCanvas(){
   const canvas = $('schedCanvas');
   const ctx = canvas.getContext('2d');
   const days = weekDays(state.horariosWeek);
@@ -1545,8 +1892,9 @@ function exportSchedulePNG(){
         else if (v) { ctx.fillStyle = '#f7faf8'; ctx.fillRect(x + 1, y + 1, dayW - 2, rowH - 2); ctx.fillStyle = '#1b2530'; }
         else { ctx.fillStyle = '#667085'; }
         if (v) {
-          ctx.font = '800 21px ' + FONT; ctx.textAlign = 'center';
-          ctx.fillText(fit(v, dayW - 8, '800 21px ' + FONT), x + dayW / 2, y + rowH / 2);
+          const fnt = v.length > 7 ? '800 16px ' + FONT : '800 21px ' + FONT;
+          ctx.font = fnt; ctx.textAlign = 'center';
+          ctx.fillText(fit(v, dayW - 8, fnt), x + dayW / 2, y + rowH / 2);
           ctx.textAlign = 'left';
         }
       });
@@ -1568,15 +1916,124 @@ function exportSchedulePNG(){
     });
   }
   ctx.fillStyle = '#667085'; ctx.font = '600 17px ' + FONT;
-  ctx.fillText('Generado desde el dashboard Cántaros · OFF = descanso · F = falta · 11-CL = entrada 11:00 a cierre', pad + 6, H - 18);
-  canvas.toBlob(function(blob){
-    if (!blob) return;
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = 'horarios-' + state.horariosWeek + '.png';
-    document.body.appendChild(a); a.click(); a.remove();
-    setTimeout(function(){ URL.revokeObjectURL(a.href); }, 5000);
-  }, 'image/png');
+  ctx.fillText('Generado desde el dashboard Cántaros · OFF = descanso · F = falta · 11-CL = entrada 11:00 a cierre · 11:00-20:00 = entrada y salida', pad + 6, H - 18);
+  return canvas;
+}
+
+/* Ver la imagen del horario en un modal (para guardarla o compartirla
+   por WhatsApp desde el teléfono) y descargarla como PNG. */
+function showScheduleImage(){
+  const canvas = drawScheduleCanvas();
+  $('imgModalTitle').textContent = 'Horarios · Semana del ' + fmtWeek(state.horariosWeek);
+  const dataUrl = canvas.toDataURL('image/png');
+  $('imgModalImg').src = dataUrl;
+  const dl = $('imgModalDownload');
+  dl.href = dataUrl;
+  dl.download = 'horarios-' + state.horariosWeek + '.png';
+  $('imgModal').style.display = 'flex';
+}
+function closeScheduleImage(){ $('imgModal').style.display = 'none'; }
+
+/* Exportar la semana a Excel (.xlsx) con SheetJS. */
+async function exportScheduleXLSX(){
+  const msg = $('schedMsg');
+  try {
+    const XLSX = await ensureXLSX();
+    const days = weekDays(state.horariosWeek);
+    const aoa = [
+      ['Horarios · Semana del ' + fmtWeek(state.horariosWeek)],
+      ['Cántaros, Cazos y Cantares · Calle Sol #840 Oriente, Ciudad Juárez'],
+      [],
+      ['#', 'Nombre'].concat(days.map((d, i) => DIAS[i] + ' ' + d.getDate() + ' ' + MESES[d.getMonth()])),
+    ];
+    const shiftMap = {};
+    state.horarios.forEach(h => { shiftMap[h.staff_id + '|' + h.dia] = h.turno || ''; });
+    let n = 0;
+    AREAS.forEach(area => {
+      const members = state.staff.filter(s => s.area === area);
+      if (!members.length) return;
+      aoa.push([area]);
+      members.forEach(s => {
+        n++;
+        aoa.push([n, s.nombre].concat(days.map(d => shiftMap[s.id + '|' + toISODate(d)] || '')));
+      });
+    });
+    if (state.eventos.length) {
+      aoa.push([]);
+      aoa.push(['Eventos y reservaciones de la semana']);
+      state.eventos.forEach(e => {
+        const d = days.find(x => toISODate(x) === e.dia);
+        const label = d ? DIAS[days.indexOf(d)] + ' ' + d.getDate() + ' ' + MESES[d.getMonth()] : e.dia;
+        aoa.push([label, e.tipo === 'reservacion' ? 'Reservación' : 'Evento', e.titulo, e.nota || '']);
+      });
+    }
+    const ws = XLSX.utils.aoa_to_sheet(aoa);
+    ws['!cols'] = [{ wch: 6 }, { wch: 30 }, { wch: 14 }, { wch: 14 }, { wch: 14 }, { wch: 14 }, { wch: 14 }, { wch: 14 }, { wch: 14 }];
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Horarios');
+    XLSX.writeFile(wb, 'horarios-' + state.horariosWeek + '.xlsx');
+    msg.className = 'form-msg ok';
+    msg.textContent = 'Excel descargado: horarios-' + state.horariosWeek + '.xlsx';
+  } catch (err) {
+    msg.className = 'form-msg err';
+    msg.textContent = 'No se pudo exportar a Excel: ' + err.message;
+  }
+}
+
+/* Exportar a PDF: abre una vista imprimible limpia y llama a imprimir. */
+function exportSchedulePDF(){
+  const msg = $('schedMsg');
+  const days = weekDays(state.horariosWeek);
+  const shiftMap = {};
+  state.horarios.forEach(h => { shiftMap[h.staff_id + '|' + h.dia] = h.turno || ''; });
+  let rowsHtml = '', n = 0;
+  AREAS.forEach(area => {
+    const members = state.staff.filter(s => s.area === area);
+    if (!members.length) return;
+    rowsHtml += '<tr class="sec"><td colspan="9">' + esc(area) + '</td></tr>';
+    members.forEach(s => {
+      n++;
+      rowsHtml += '<tr><td class="num">' + n + '</td><td><b>' + esc(s.nombre) + '</b></td>' +
+        days.map(d => {
+          const v = String(shiftMap[s.id + '|' + toISODate(d)] || '').trim().toUpperCase();
+          const cls = v === 'OFF' ? ' class="off"' : (v === 'F' ? ' class="falta"' : '');
+          return '<td' + cls + '>' + esc(v) + '</td>';
+        }).join('') + '</tr>';
+    });
+  });
+  const evs = state.eventos.map(e => {
+    const d = days.find(x => toISODate(x) === e.dia);
+    const label = d ? DIAS[days.indexOf(d)] + ' ' + d.getDate() + ' ' + MESES[d.getMonth()] : e.dia;
+    return '<li><b>' + esc(label) + '</b> · ' + (e.tipo === 'reservacion' ? 'Reservación' : 'Evento') + ' · ' + esc(e.titulo) + (e.nota ? ' — ' + esc(e.nota) : '') + '</li>';
+  }).join('');
+  const html = '<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><title>Horarios · Semana del ' + fmtWeek(state.horariosWeek) + '</title><style>' +
+    'body{font-family:-apple-system,"Segoe UI",Roboto,Arial,sans-serif;color:#1b2530;margin:24px}' +
+    'h1{font-size:22px;margin:0 0 4px} p.sub{color:#667085;margin:0 0 18px}' +
+    'table{width:100%;border-collapse:collapse;font-size:13px} th,td{border:1px solid #cbd5d1;padding:7px 8px;text-align:center}' +
+    'th{background:#0d2e20;color:#fff} td:first-child,td:nth-child(2){text-align:left}' +
+    'tr.sec td{background:#eef3f0;font-weight:800;text-transform:uppercase;font-size:11px;letter-spacing:.05em;color:#667085}' +
+    'td.off{background:#dbeafe;color:#175cd3;font-weight:700} td.falta{background:#fdecea;color:#c0392b;font-weight:700}' +
+    'h2{font-size:15px;margin:22px 0 6px} li{margin:4px 0}' +
+    '@media print{body{margin:0} @page{size:landscape}}' +
+    '</style></head><body>' +
+    '<h1>Horarios · Semana del ' + fmtWeek(state.horariosWeek) + '</h1>' +
+    '<p class="sub">Cántaros, Cazos y Cantares · Calle Sol #840 Oriente, Ciudad Juárez</p>' +
+    '<table><thead><tr><th>#</th><th style="text-align:left">Nombre</th>' +
+    days.map((d, i) => '<th>' + DIAS[i] + ' ' + d.getDate() + ' ' + MESES[d.getMonth()] + '</th>').join('') + '</tr></thead><tbody>' +
+    (rowsHtml || '<tr><td colspan="9">Sin personal registrado.</td></tr>') + '</tbody></table>' +
+    (evs ? '<h2>Eventos y reservaciones de la semana</h2><ul>' + evs + '</ul>' : '') +
+    '<p class="sub" style="margin-top:18px">OFF = descanso · F = falta · 11-CL = entrada 11:00 a cierre · 11:00-20:00 = entrada y salida</p>' +
+    '</body></html>';
+  const win = window.open('', '_blank');
+  if (!win) {
+    msg.className = 'form-msg err';
+    msg.textContent = 'El navegador bloqueó la ventana: permite las ventanas emergentes para este sitio y vuelve a intentar.';
+    return;
+  }
+  win.document.write(html);
+  win.document.close();
+  win.focus();
+  setTimeout(function(){ try { win.print(); } catch (e) {} }, 400);
 }
 
 /* ---------------- navegación y tema ---------------- */
@@ -1598,10 +2055,6 @@ function renderAll(){
   renderHorarios();
   fillProductSelect();
   refreshManualTable();
-  const dl = $('invProducts');
-  const names = {};
-  state.invBarra.concat(state.invCocina).forEach(r => { names[r.producto] = true; });
-  dl.innerHTML = Object.keys(names).sort().map(n => '<option value="' + esc(n) + '">').join('');
 }
 function applyTheme(t){
   document.documentElement.setAttribute('data-theme', t);
@@ -1625,10 +2078,17 @@ document.addEventListener('DOMContentLoaded', async () => {
   $('themeBtnM').addEventListener('click', toggle);
   document.querySelectorAll('[data-view]').forEach(b => b.addEventListener('click', () => showView(b.getAttribute('data-view'))));
   const monday = toISODate(mondayOf(new Date()));
-  ['fWeek', 'iWeek', 'posWeek', 'csvWeek', 'horariosWeekInput'].forEach(id => { $(id).value = monday; });
+  ['fWeek', 'posWeek', 'csvWeek', 'horariosWeekInput'].forEach(id => { $(id).value = monday; });
   $('weekSelect').addEventListener('change', async () => {
     state.selectedWeek = $('weekSelect').value;
-    setStatus(null, 'Cargando semana…');
+    setStatus(null, 'Cargando periodo…');
+    await loadWeekData();
+    renderAll();
+    setStatus(true, 'En vivo · Supabase');
+  });
+  $('periodSelect').addEventListener('change', async () => {
+    state.period = $('periodSelect').value;
+    setStatus(null, 'Cargando periodo…');
     await loadWeekData();
     renderAll();
     setStatus(true, 'En vivo · Supabase');
@@ -1641,9 +2101,22 @@ document.addEventListener('DOMContentLoaded', async () => {
   });
   ['fQty', 'fPrice', 'fDiscount', 'fCourtesy'].forEach(id => $(id).addEventListener('input', updateSalePreview));
   $('saleForm').addEventListener('submit', submitSale);
-  $('invForm').addEventListener('submit', submitInv);
   $('posUploadBtn').addEventListener('click', uploadPOS);
   $('csvUploadBtn').addEventListener('click', uploadInvCSV);
+  $('docForm').addEventListener('submit', uploadDoc);
+  $('prodSearch').addEventListener('input', () => { state.prodQuery = $('prodSearch').value; renderProductsTable(); });
+  document.querySelectorAll('#productsTable th[data-sort]').forEach(th => th.addEventListener('click', () => {
+    const k = th.getAttribute('data-sort');
+    if (state.prodSort.key === k) state.prodSort.dir *= -1;
+    else state.prodSort = { key: k, dir: (k === 'nombre' || k === 'grupo') ? 1 : -1 };
+    renderProductsTable();
+  }));
+  document.querySelectorAll('#groupTopTable th[data-sort]').forEach(th => th.addEventListener('click', () => {
+    const k = th.getAttribute('data-sort');
+    if (state.groupSort.key === k) state.groupSort.dir *= -1;
+    else state.groupSort = { key: k, dir: k === 'grupo' ? 1 : -1 };
+    renderGroupTop();
+  }));
   $('barraSearch').addEventListener('input', () => renderInventory('barra'));
   $('cocinaSearch').addEventListener('input', () => renderInventory('cocina'));
   $('schedTable').addEventListener('change', onShiftChange);
@@ -1654,7 +2127,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     const btn = e.target.closest('[data-del-event]');
     if (btn) deleteEvent(btn.getAttribute('data-del-event'));
   });
-  $('exportSchedBtn').addEventListener('click', exportSchedulePNG);
+  $('viewImgBtn').addEventListener('click', showScheduleImage);
+  $('exportXlsxBtn').addEventListener('click', exportScheduleXLSX);
+  $('exportPdfBtn').addEventListener('click', exportSchedulePDF);
+  $('imgModalClose').addEventListener('click', closeScheduleImage);
+  $('imgModalClose2').addEventListener('click', closeScheduleImage);
+  $('imgModal').addEventListener('click', e => { if (e.target === $('imgModal')) closeScheduleImage(); });
   await loadConfig();
   await loadAll();
   if (!LIVE) { renderDocs(); renderHorarios(); } // sin conexión: al menos mostrar los documentos conocidos y el aviso de horarios
