@@ -350,8 +350,8 @@ html[data-theme="dark"] .sched-cell-btn.cell-f{background:#3d1d1a;color:#f0857a;
     </nav>
     <div class="side-foot">
       <div class="side-week">
-        <label for="weekSelect">Semana (lunes)</label>
-        <select id="weekSelect"><option value="2026-11-02">Semana del 02 nov 2026</option></select>
+        <label for="weekSelect">Semana (n.º ISO)</label>
+        <select id="weekSelect"><option value="2026-11-02">Semana 45 · 2–8 nov 2026</option></select>
         <label for="periodSelect" style="margin-top:10px">Periodo del panel</label>
         <select id="periodSelect">
           <option value="semana" selected>Semana</option>
@@ -384,7 +384,7 @@ html[data-theme="dark"] .sched-cell-btn.cell-f{background:#3d1d1a;color:#f0857a;
       <div class="page-head">
         <div>
           <h2>Panel ejecutivo</h2>
-          <p id="panelSubtitle">Semana del 02 nov 2026 · Ventas de barra (Soft Restaurant) · <span class="badge grey" id="liveBadge">cargando datos en vivo…</span></p>
+          <p id="panelSubtitle">Semana 45 · 2–8 nov 2026 · Ventas de barra (Soft Restaurant) · <span class="badge grey" id="liveBadge">cargando datos en vivo…</span></p>
         </div>
         <button class="btn ghost small" id="refreshBtn" type="button">↻ Actualizar datos</button>
       </div>
@@ -504,7 +504,7 @@ html[data-theme="dark"] .sched-cell-btn.cell-f{background:#3d1d1a;color:#f0857a;
         <form id="saleForm">
           <div class="form-grid" style="grid-template-columns:1fr 1fr 1fr">
             <div><label for="fWaiter">Mesero</label><select id="fWaiter" required><option value="">— Elige un mesero —</option></select></div>
-            <div><label for="fWeek">Semana (lunes)</label><input type="date" id="fWeek" required></div>
+            <div><label for="fWeek">Semana (lunes)</label><input type="date" id="fWeek" required> <span id="fWeekLabel" class="small muted" style="font-weight:700"></span></div>
             <div><label for="fTotal">Total de venta ($)</label><input type="number" id="fTotal" min="0" step="0.01" placeholder="0.00" required></div>
           </div>
           <div style="margin-top:14px"><button class="btn" type="submit" id="saleSubmit">Guardar venta</button></div>
@@ -527,10 +527,10 @@ html[data-theme="dark"] .sched-cell-btn.cell-f{background:#3d1d1a;color:#f0857a;
       <div class="grid2">
         <div class="card" id="posUploadCard">
           <h3>Subir reporte de Soft Restaurant (Excel o CSV)</h3>
-          <p class="card-sub">El archivo del reporte tal cual sale del POS, en Excel (.xlsx) o CSV. Se guarda en la tabla de staging y se cruza con el catálogo para calcular costo y margen.</p>
+          <p class="card-sub">El archivo del reporte tal cual sale del POS, en Excel (.xlsx) o CSV. Se guarda en la tabla de staging y se cruza con el catálogo para calcular costo y margen. Si el nombre de la hoja o del archivo trae la semana (ej. "Semana 48"), la app la detecta sola.</p>
           <div class="file-box">
             <label for="posWeek">Semana del reporte (lunes)</label>
-            <input type="date" id="posWeek" style="margin-bottom:10px">
+            <input type="date" id="posWeek" style="margin-bottom:6px"> <span id="posWeekLabel" class="small muted" style="font-weight:700"></span>
             <input type="file" id="posFile" accept=".csv,.xls,.xlsx,text/csv,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet">
             <div style="margin-top:12px"><button class="btn" type="button" id="posUploadBtn">Subir reporte</button></div>
             <div class="form-msg" id="posMsg"></div>
@@ -538,17 +538,24 @@ html[data-theme="dark"] .sched-cell-btn.cell-f{background:#3d1d1a;color:#f0857a;
         </div>
         <div class="card">
           <h3>Subir conteo de inventario (Excel o CSV)</h3>
-          <p class="card-sub">El archivo de Excel de la semana (.xls/.xlsx) o exportado a CSV, con las columnas del inventario (Producto, Unidad, Inventario inicial, Compras, Almacén, Display, Barra, Venta, Mínimo, Costo unitario). El inventario siempre se carga por archivo, no a mano.</p>
+          <p class="card-sub">El archivo de Excel de la semana (.xls/.xlsx) o exportado a CSV, con las columnas del inventario (Producto, Unidad, Inventario inicial, Compras, Almacén, Display, Barra, Venta, Mínimo, Costo unitario). El inventario siempre se carga por archivo, no a mano. Si el nombre de la hoja o del archivo trae la semana (ej. "Semana 48"), la app la detecta sola.</p>
           <div class="file-box">
             <label for="csvArea">Área</label>
             <select id="csvArea" style="margin-bottom:10px"><option value="barra">Barra</option><option value="cocina">Cocina</option></select>
-            <label for="csvWeek">Semana (lunes)</label>
-            <input type="date" id="csvWeek" style="margin-bottom:10px">
+            <label for="csvWeek">Semana del conteo (lunes)</label>
+            <input type="date" id="csvWeek" style="margin-bottom:6px"> <span id="csvWeekLabel" class="small muted" style="font-weight:700"></span>
             <input type="file" id="csvFile" accept=".csv,.xls,.xlsx,text/csv,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet">
             <div style="margin-top:12px"><button class="btn" type="button" id="csvUploadBtn">Subir conteo</button></div>
             <div class="form-msg" id="csvMsg"></div>
           </div>
         </div>
+      </div>
+
+      <div class="card" style="margin-top:14px">
+        <h3>Semanas de ventas cargadas (reporte POS)</h3>
+        <p class="card-sub">Semanas con reporte de Soft Restaurant subido. Eliminar borra las ventas con costo y el staging de esa semana (no toca las ventas por mesero).</p>
+        <div id="uploadedWeeksList"><div class="empty">Cargando…</div></div>
+        <div class="form-msg" id="delWeekMsg"></div>
       </div>
     </section>
 
@@ -557,7 +564,7 @@ html[data-theme="dark"] .sched-cell-btn.cell-f{background:#3d1d1a;color:#f0857a;
       <div class="page-head">
         <div>
           <h2>Horarios del staff</h2>
-          <p id="horariosSub">Semana del … · toca una celda para elegir entrada y salida, cierre, OFF o falta.</p>
+          <p id="horariosSub">Semana … · toca una celda para elegir entrada y salida, cierre, OFF o falta.</p>
         </div>
         <div style="display:flex;gap:8px;flex-wrap:wrap">
           <button class="btn ghost small" id="viewImgBtn" type="button">🖼️ Ver imagen</button>
@@ -575,8 +582,8 @@ html[data-theme="dark"] .sched-cell-btn.cell-f{background:#3d1d1a;color:#f0857a;
         <span class="badge grey">＋ · toca la celda para elegir la hora</span>
       </div>
       <div class="week-picker">
-        <label for="horariosWeekInput">Semana</label>
-        <input type="date" id="horariosWeekInput">
+        <label for="horariosWeekInput">Semana (n.º ISO)</label>
+        <input type="date" id="horariosWeekInput"> <span id="horariosWeekLabel" class="small muted" style="font-weight:700"></span>
         <span class="small muted">Elige cualquier día: se toma el lunes de esa semana. Esta semana es independiente del selector general, así puedes armar horarios de semanas nuevas sin ventas aún.</span>
       </div>
       <div class="card">
@@ -633,7 +640,7 @@ html[data-theme="dark"] .sched-cell-btn.cell-f{background:#3d1d1a;color:#f0857a;
       <div class="page-head">
         <div>
           <h2>Inventario de barra</h2>
-          <p id="barraSub">Semana del 23 nov 2026 · 87 productos · conteo en onzas para licores.</p>
+          <p id="barraSub">Semana 48 · 23–29 nov 2026 · 87 productos · conteo en onzas para licores.</p>
         </div>
       </div>
       <div class="kpis" id="barraKpis">
@@ -799,6 +806,19 @@ html[data-theme="dark"] .sched-cell-btn.cell-f{background:#3d1d1a;color:#f0857a;
   </div>
 </div>
 
+<div class="modal-overlay" id="delWeekModal" style="display:none">
+  <div class="modal small">
+    <div class="modal-head"><h3>Eliminar semana de ventas</h3><button class="btn ghost small" id="delWeekModalClose" type="button">✕</button></div>
+    <div class="modal-body">
+      <p class="small" id="delWeekModalText" style="margin:0 0 12px"></p>
+      <div class="modal-actions">
+        <button class="btn danger" id="delWeekConfirmBtn" type="button">Eliminar semana</button>
+        <button class="btn ghost" id="delWeekCancelBtn" type="button">Cancelar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <script>
 'use strict';
 /* ================================================================
@@ -860,6 +880,72 @@ function fmtMoney(n){ if(n==null||n===''||isNaN(Number(n))) return '—'; return
 function fmtNum(n){ if(n==null||n===''||isNaN(Number(n))) return '—'; return Number(n).toLocaleString('es-MX'); }
 function fmtPct(n){ if(n==null||isNaN(Number(n))) return '—'; return (Number(n)*100).toFixed(1).replace('.',',') + ' %'; }
 function fmtWeek(d){ if(!d) return '—'; const p = String(d).split('-'); if(p.length!==3) return String(d); return Number(p[2]) + ' ' + MESES[Number(p[1])-1] + ' ' + p[0]; }
+/* ---------------- semana ISO 8601 ---------------- */
+// La semana empieza en lunes; la semana 1 es la que contiene el primer
+// jueves del año. 2026-11-02 = Semana 45; 2026-11-23 = Semana 48;
+// 2026 tiene 53 semanas ISO; 2025-12-29 = Semana 01 de 2026.
+function isoWeekOf(d){ // [añoISO, semana] de una fecha (Date local)
+  const x = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  const day = (x.getDay() + 6) % 7; // 0 = lunes
+  x.setDate(x.getDate() - day + 3); // jueves de esa semana
+  const isoYear = x.getFullYear();
+  const jan4 = new Date(isoYear, 0, 4);
+  const jan4day = (jan4.getDay() + 6) % 7;
+  const week1Mon = new Date(jan4); week1Mon.setDate(jan4.getDate() - jan4day);
+  return [isoYear, Math.round((x - week1Mon) / 604800000) + 1];
+}
+function weekNum(iso){ if(!iso) return null; const p = String(iso).split('-').map(Number); return isoWeekOf(new Date(p[0], p[1]-1, p[2]))[1]; }
+function weekYear(iso){ if(!iso) return null; const p = String(iso).split('-').map(Number); return isoWeekOf(new Date(p[0], p[1]-1, p[2]))[0]; }
+function mondayOfISOWeek(y, n){ // lunes (ISO) de la semana n del año y
+  const jan4 = new Date(y, 0, 4);
+  const jan4day = (jan4.getDay() + 6) % 7;
+  const m = new Date(jan4); m.setDate(jan4.getDate() - jan4day + (n - 1) * 7);
+  return toISODate(m);
+}
+function weekRangeShort(iso){ // "23–29 nov 2026"
+  const days = weekDays(iso); if (!days.length) return fmtWeek(iso);
+  const a = days[0], b = days[6];
+  if (a.getMonth() === b.getMonth() && a.getFullYear() === b.getFullYear())
+    return a.getDate() + '–' + b.getDate() + ' ' + MESES[a.getMonth()] + ' ' + a.getFullYear();
+  if (a.getFullYear() === b.getFullYear())
+    return a.getDate() + ' ' + MESES[a.getMonth()] + ' – ' + b.getDate() + ' ' + MESES[b.getMonth()] + ' ' + a.getFullYear();
+  return a.getDate() + ' ' + MESES[a.getMonth()] + ' ' + a.getFullYear() + ' – ' + b.getDate() + ' ' + MESES[b.getMonth()] + ' ' + b.getFullYear();
+}
+function weekLabel(iso){ // "Semana 48 · 23–29 nov 2026"
+  if (!iso) return '—';
+  return 'Semana ' + weekNum(iso) + ' · ' + weekRangeShort(iso);
+}
+function parseWeekRef(text, refISO){
+  // Detecta el número de semana en un nombre de hoja o archivo:
+  // "Semana 48", "semana-48", "SEMANA48", "S48", "PRODUCTOS_SEMANA45".
+  // Devuelve el lunes ISO de esa semana o null si no hay número.
+  if (!text) return null;
+  const s = String(text);
+  let m = s.match(/semana\s*[-_ ]?\s*(\d{1,2})/i);
+  if (!m) m = s.match(/(?:^|[\s_\-])s(\d{1,2})(?![0-9])/i);
+  if (!m) return null;
+  const n = parseInt(m[1], 10);
+  if (n < 1 || n > 53) return null;
+  let y = refISO ? weekYear(refISO) : new Date().getFullYear();
+  const today = toISODate(new Date());
+  const tryYear = yy => {
+    const mon = mondayOfISOWeek(yy, n);
+    return (weekNum(mon) === n && weekYear(mon) === yy) ? mon : null;
+  };
+  let mon = tryYear(y);
+  if (mon) {
+    const diff = (new Date(mon) - new Date(today)) / 86400000;
+    if (diff > 180) mon = tryYear(y - 1) || mon;      // p. ej. "Semana 1" en diciembre -> año siguiente
+    else if (diff < -180) mon = tryYear(y + 1) || mon; // p. ej. "Semana 52" en enero -> año anterior
+  }
+  return mon;
+}
+function syncWeekLabels(){ // muestra "Semana N" junto a los campos de fecha
+  [['posWeek','posWeekLabel'],['csvWeek','csvWeekLabel'],['fWeek','fWeekLabel']].forEach(pair => {
+    const inp = $(pair[0]), sp = $(pair[1]);
+    if (inp && sp) sp.textContent = inp.value ? weekLabel(inp.value) : '';
+  });
+}
 const MESES_LARGOS = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
 function weekRangeTitle(iso){ // "Horario de la semana del 23 al 29 de noviembre de 2026"
   const days = weekDays(iso); if (!days.length) return 'Horario de la semana';
@@ -942,18 +1028,20 @@ function ensureXLSX(){
   return xlsxPromise;
 }
 // Lee un archivo .csv, .xls o .xlsx y devuelve sus filas como arreglos
-// (primera hoja del libro en el caso de Excel).
-async function readSpreadsheetFile(file){
+// (primera hoja del libro en el caso de Excel) + el nombre de esa hoja,
+// para detectar la semana ("Semana 48") del nombre de la hoja o del archivo.
+async function readSpreadsheetWithMeta(file){
   const name = String(file.name || '').toLowerCase();
   if (name.endsWith('.xlsx') || name.endsWith('.xls')) {
     const XLSX = await ensureXLSX();
     const buf = await file.arrayBuffer();
     const wb = XLSX.read(buf, { type: 'array' });
     const ws = wb.Sheets[wb.SheetNames[0]];
-    return XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
+    return { rows: XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' }), sheetName: wb.SheetNames[0] };
   }
-  return parseCSV(await file.text());
+  return { rows: parseCSV(await file.text()), sheetName: null };
 }
+async function readSpreadsheetFile(file){ return (await readSpreadsheetWithMeta(file)).rows; }
 
 /* ---------------- estado de conexión ---------------- */
 function setStatus(ok, msg){
@@ -1001,6 +1089,7 @@ async function loadAll(){
     buildWeekSelector();
     await loadWeekData();
     renderAll();
+    refreshUploadedWeeks();
   } catch (e) {
     LIVE_ERROR = e;
     setStatus(false, 'Error al leer Supabase');
@@ -1017,7 +1106,7 @@ function buildWeekSelector(){
   state.invResumen.forEach(r => { all[r.week_start] = true; });
   const list = Object.keys(all).sort().reverse();
   if (!list.length) list.push(FALLBACK_WEEK);
-  sel.innerHTML = list.map(w => '<option value="' + w + '"' + (w === state.selectedWeek ? ' selected' : '') + '>Semana del ' + fmtWeek(w) + '</option>').join('');
+  sel.innerHTML = list.map(w => '<option value="' + w + '"' + (w === state.selectedWeek ? ' selected' : '') + '>' + esc(weekLabel(w)) + '</option>').join('');
   if (list.indexOf(state.selectedWeek) === -1) state.selectedWeek = list[0];
   sel.value = state.selectedWeek;
 }
@@ -1064,7 +1153,7 @@ function periodLabel(){
   const p = state.selectedWeek.split('-').map(Number);
   if (state.period === 'mes') return 'Mes de ' + MESES[p[1] - 1] + ' ' + p[0];
   if (state.period === 'anio') return 'Año ' + p[0];
-  return 'Semana del ' + fmtWeek(state.selectedWeek);
+  return weekLabel(state.selectedWeek);
 }
 function periodLabelShort(){
   return state.period === 'semana' ? 'semana' : (state.period === 'mes' ? 'mes' : 'año');
@@ -1102,7 +1191,7 @@ function prevPeriodAgg(){
 function prevPeriodLabel(){
   const p = state.selectedWeek.split('-').map(Number);
   const d = new Date(p[0], p[1] - 1, p[2]);
-  if (state.period === 'semana') { d.setDate(d.getDate() - 7); return 'la semana del ' + fmtWeek(toISODate(mondayOf(d))); }
+  if (state.period === 'semana') { d.setDate(d.getDate() - 7); return 'la ' + weekLabel(toISODate(mondayOf(d))); }
   if (state.period === 'mes') { d.setMonth(d.getMonth() - 1); return 'el mes de ' + MESES[d.getMonth()] + ' ' + d.getFullYear(); }
   d.setFullYear(d.getFullYear() - 1); return 'el año ' + d.getFullYear();
 }
@@ -1111,7 +1200,7 @@ function prevPeriodLabel(){
 function periodSeries(){
   if (state.period === 'semana') {
     return state.weeks.slice().sort((a, b) => String(a.week_start).localeCompare(String(b.week_start)))
-      .map(w => ({ label: fmtWeek(w.week_start), venta_neta: num(w.venta_neta), margen: num(w.margen), margen_pct: num(w.margen_pct) }));
+      .map(w => ({ label: 'Sem ' + weekNum(w.week_start), venta_neta: num(w.venta_neta), margen: num(w.margen), margen_pct: num(w.margen_pct) }));
   }
   const key = state.period === 'mes' ? (w => w.week_start.slice(0, 7)) : (w => w.week_start.slice(0, 4));
   const label = state.period === 'mes'
@@ -1294,7 +1383,7 @@ function renderAlerts(){
   const box = $('alertBox');
   const rows = state.invBarra.filter(r => num(r.perdido_pesos) > 0).sort((a, b) => num(b.perdido_pesos) - num(a.perdido_pesos));
   const sum = invSummary('barra');
-  $('alertSub').textContent = 'Faltantes de la semana del ' + fmtWeek(state.invWeekBarra) + ' · Perdido ' + fmtMoney(sum.perdido_pesos) + ' · Sobrante ' + fmtMoney(sum.sobrante_pesos) + '.';
+  $('alertSub').textContent = 'Faltantes de la ' + weekLabel(state.invWeekBarra) + ' · Perdido ' + fmtMoney(sum.perdido_pesos) + ' · Sobrante ' + fmtMoney(sum.sobrante_pesos) + '.';
   if (!state.invBarra.length) { box.innerHTML = '<div class="empty">Sin conteos de inventario cargados.</div>'; return; }
   if (!rows.length) { box.innerHTML = '<div class="notice ok" style="margin:0">Sin faltantes esta semana. Sobrante total: <b>' + fmtMoney(sum.sobrante_pesos) + '</b>.</div>'; return; }
   box.innerHTML = rows.slice(0, 5).map(r =>
@@ -1467,9 +1556,9 @@ function renderInventory(area){
   $(pfx + 'Sobrante').textContent = fmtMoney(sum.sobrante_pesos);
   const lostCount = rows.filter(r => num(r.perdido_pesos) > 0).length;
   const surCount = rows.filter(r => num(r.sobrante_pesos) > 0).length;
-  $(pfx + 'ValorSub').textContent = fmtNum(sum.productos) + ' productos en inventario · semana del ' + fmtWeek(week);
+  $(pfx + 'ValorSub').textContent = fmtNum(sum.productos) + ' productos en inventario · ' + weekLabel(week);
   $(pfx + 'PerdidoSub').textContent = lostCount + ' productos con faltante';
-  $(isBarra ? 'barraSub' : 'cocinaSub').textContent = 'Semana del ' + fmtWeek(week) +
+  $(isBarra ? 'barraSub' : 'cocinaSub').textContent = weekLabel(week) +
     (week !== state.selectedWeek ? ' · mostrando la última semana con conteos (la seleccionada aún no tiene inventario)' : '') +
     (isBarra ? ' · 87 productos · conteo en onzas para licores.' : ' · Abarrotes, químicos, refrescos, fruta y verdura, desechables.');
   $(isBarra ? 'barraCount' : 'cocinaCount').textContent = filtered.length + ' de ' + rows.length + ' productos';
@@ -1518,7 +1607,7 @@ async function refreshWaiterSales(){
     state.waiterWeeks = list;
     if (list.indexOf(state.waiterWeek) === -1) state.waiterWeek = list[0];
     const sel = $('waiterWeek');
-    sel.innerHTML = list.map(w => '<option value="' + w + '"' + (w === state.waiterWeek ? ' selected' : '') + '>Semana del ' + fmtWeek(w) + '</option>').join('');
+    sel.innerHTML = list.map(w => '<option value="' + w + '"' + (w === state.waiterWeek ? ' selected' : '') + '>' + esc(weekLabel(w)) + '</option>').join('');
     sel.value = state.waiterWeek;
     renderWaiterCards();
   } catch (e) {
@@ -1538,11 +1627,11 @@ function miniBars(series){
   const bars = series.map((s, i) => {
     const h = Math.max(3, Math.round(s.total / max * (H - 18)));
     const x = 4 + i * (bw + gap);
-    return '<rect x="' + x + '" y="' + (H - 14 - h) + '" width="' + bw + '" height="' + h + '" rx="3" fill="var(--accent)"><title>' + fmtWeek(s.week) + ': ' + fmtMoney(s.total) + '</title></rect>';
+    return '<rect x="' + x + '" y="' + (H - 14 - h) + '" width="' + bw + '" height="' + h + '" rx="3" fill="var(--accent)"><title>' + weekLabel(s.week) + ': ' + fmtMoney(s.total) + '</title></rect>';
   }).join('');
   const labels = series.map((s, i) => {
     const x = 4 + i * (bw + gap) + bw / 2;
-    return '<text x="' + x + '" y="' + (H - 2) + '" font-size="8" fill="var(--muted)" text-anchor="middle">' + s.week.slice(5).replace('-', '/') + '</text>';
+    return '<text x="' + x + '" y="' + (H - 2) + '" font-size="8" fill="var(--muted)" text-anchor="middle">S' + weekNum(s.week) + '</text>';
   }).join('');
   return '<svg width="100%" viewBox="0 0 ' + W + ' ' + H + '" style="max-width:230px;display:block">' + bars + labels + '</svg>';
 }
@@ -1552,14 +1641,14 @@ function renderWaiterCards(){
   const rows = state.ventasMeseroAll.filter(r => r.week_start === week);
   const btn = $('waiterSortBtn');
   btn.textContent = state.waiterSortDir === -1 ? '↓ Mayor a menor' : '↑ Menor a mayor';
-  if (!rows.length) { box.innerHTML = '<div class="empty">Aún no hay ventas por mesero en la semana del ' + fmtWeek(week) + '.</div>'; return; }
+  if (!rows.length) { box.innerHTML = '<div class="empty">Aún no hay ventas por mesero en la ' + weekLabel(week) + '.</div>'; return; }
   rows.sort((a, b) => (num(a.total) - num(b.total)) * state.waiterSortDir);
   box.innerHTML = rows.map(r => {
     const series = waiterSeries(r.staff_id);
     const totalAll = series.reduce((a, s) => a + s.total, 0);
     return '<div class="card waiter-card"><h3 style="margin:0 0 2px">' + esc(r.waiter) + '</h3>' +
       '<div class="w-total">' + fmtMoney(r.total) + '</div>' +
-      '<div class="w-sub">Semana del ' + fmtWeek(week) + ' · acumulado últimas ' + series.length + ' sem: ' + fmtMoney(totalAll) + '</div>' +
+      '<div class="w-sub">' + weekLabel(week) + ' · acumulado últimas ' + series.length + ' sem: ' + fmtMoney(totalAll) + '</div>' +
       miniBars(series) +
       '<div class="w-sub">Desempeño · últimas semanas con venta</div></div>';
   }).join('');
@@ -1583,7 +1672,7 @@ async function submitWaiterSale(e){
       body: { week_start: week, staff_id: staffId, waiter: name, total: total },
       prefer: 'resolution=merge-duplicates,return=representation', query: { on_conflict: 'week_start,staff_id' } });
     $('saleMsg').className = 'form-msg ok';
-    $('saleMsg').textContent = 'Guardado: ' + name + ' · semana del ' + fmtWeek(week) + ' · Total ' + fmtMoney(total) + '.';
+    $('saleMsg').textContent = 'Guardado: ' + name + ' · ' + weekLabel(week) + ' · Total ' + fmtMoney(total) + '.';
     $('fTotal').value = '';
     state.waiterWeek = week;
     await refreshWaiterSales();
@@ -1645,13 +1734,17 @@ async function uploadPOS(){
   const msg = $('posMsg');
   if (!LIVE) { msg.className = 'form-msg err'; msg.textContent = 'Sin conexión a Supabase: configura las variables en Vercel primero.'; return; }
   const file = $('posFile').files[0];
-  const week = $('posWeek').value;
+  let week = $('posWeek').value;
   if (!file) { msg.className = 'form-msg err'; msg.textContent = 'Elige el archivo del reporte primero.'; return; }
   if (!week) { msg.className = 'form-msg err'; msg.textContent = 'Elige la semana (lunes) del reporte.'; return; }
   const btn = $('posUploadBtn'); btn.disabled = true;
   msg.className = 'form-msg'; msg.textContent = 'Leyendo archivo…';
   try {
-    const rows = await readSpreadsheetFile(file);
+    const meta = await readSpreadsheetWithMeta(file);
+    const rows = meta.rows;
+    // Si el nombre de la hoja trae la semana ("Semana 48"), se usa esa.
+    const detected = parseWeekRef(meta.sheetName, state.selectedWeek);
+    if (detected) { week = detected; $('posWeek').value = detected; syncWeekLabels(); }
     const headerAt = findHeaderRow(rows, 'clave');
     if (headerAt === -1) throw new Error('El archivo no trae la columna CLAVE del reporte.');
     const idx = headerIndex(rows[headerAt]);
@@ -1689,9 +1782,9 @@ async function uploadPOS(){
     msg.textContent = 'Generando ventas con costo…';
     await sbChunks('weekly_sales', sales);
     msg.className = 'form-msg ok';
-    msg.textContent = 'Listo: ' + staging.length + ' productos subidos para la semana del ' + fmtWeek(week) + ' · ' +
+    msg.textContent = 'Listo: ' + staging.length + ' productos subidos para la ' + weekLabel(week) + ' · ' +
       (staging.length - noCost.length) + ' con costo · ' + noCost.length + ' sin costo' +
-      (noCost.length ? ' (' + noCost.join(', ') + ')' : '') + '. Actualiza el panel para verlos.';
+      (noCost.length ? ' (' + noCost.join(', ') + ')' : '') + '. Actualiza el panel para verlos.' + (detected ? ' Semana ' + weekNum(week) + ' detectada de la hoja "' + meta.sheetName + '".' : '');
     await loadAll();
   } catch (err) {
     msg.className = 'form-msg err';
@@ -1704,13 +1797,17 @@ async function uploadInvCSV(){
   const msg = $('csvMsg');
   if (!LIVE) { msg.className = 'form-msg err'; msg.textContent = 'Sin conexión a Supabase: configura las variables en Vercel primero.'; return; }
   const file = $('csvFile').files[0];
-  const area = $('csvArea').value, week = $('csvWeek').value;
+  const area = $('csvArea').value; let week = $('csvWeek').value;
   if (!file) { msg.className = 'form-msg err'; msg.textContent = 'Elige el archivo del conteo primero.'; return; }
   if (!week) { msg.className = 'form-msg err'; msg.textContent = 'Elige la semana (lunes) del conteo.'; return; }
   const btn = $('csvUploadBtn'); btn.disabled = true;
   msg.className = 'form-msg'; msg.textContent = 'Leyendo archivo…';
   try {
-    const rows = await readSpreadsheetFile(file);
+    const meta = await readSpreadsheetWithMeta(file);
+    const rows = meta.rows;
+    // Si el nombre de la hoja trae la semana ("Semana 48"), se usa esa.
+    const detected = parseWeekRef(meta.sheetName, state.selectedWeek);
+    if (detected) { week = detected; $('csvWeek').value = detected; syncWeekLabels(); }
     const headerAt = findHeaderRow(rows, 'producto');
     if (headerAt === -1) throw new Error('El archivo no trae la columna PRODUCTO.');
     const idx = headerIndex(rows[headerAt]);
@@ -1742,13 +1839,59 @@ async function uploadInvCSV(){
     }
     const perdido = out.reduce((a, r) => a + r.perdido_pesos, 0), sobrante = out.reduce((a, r) => a + r.sobrante_pesos, 0);
     msg.className = 'form-msg ok';
-    msg.textContent = 'Listo: ' + out.length + ' productos subidos a ' + (area === 'barra' ? 'barra' : 'cocina') + ' para la semana del ' + fmtWeek(week) +
-      ' · Perdido ' + fmtMoney(perdido) + ' · Sobrante ' + fmtMoney(sobrante) + '.';
+    msg.textContent = 'Listo: ' + out.length + ' productos subidos a ' + (area === 'barra' ? 'barra' : 'cocina') + ' para la ' + weekLabel(week) +
+      ' · Perdido ' + fmtMoney(perdido) + ' · Sobrante ' + fmtMoney(sobrante) + '.' + (detected ? ' Semana ' + weekNum(week) + ' detectada de la hoja "' + meta.sheetName + '".' : '');
     await loadAll();
   } catch (err) {
     msg.className = 'form-msg err';
     msg.textContent = 'No se pudo subir: ' + err.message + (err.data && err.data.message ? ' · ' + err.data.message : '');
   } finally { btn.disabled = false; }
+}
+
+/* ---------------- eliminar una semana de ventas subida (reporte POS) ---------------- */
+// Solo borra filas del reporte POS (source='soft_restaurant') y su staging.
+// NUNCA toca ventas manuales por mesero (ventas_mesero) ni source='manual'.
+async function refreshUploadedWeeks(){
+  const box = $('uploadedWeeksList');
+  if (!box) return;
+  if (!LIVE) { box.innerHTML = '<div class="empty">Sin conexión a Supabase.</div>'; return; }
+  try {
+    const rows = await sb('weekly_sales', { select: 'week_start', query: { source: 'eq.soft_restaurant' }, order: 'week_start.desc', limit: 5000 }) || [];
+    const counts = {};
+    rows.forEach(r => { counts[r.week_start] = (counts[r.week_start] || 0) + 1; });
+    const weeks = Object.keys(counts).sort().reverse();
+    if (!weeks.length) { box.innerHTML = '<div class="empty">Aún no hay reportes POS subidos.</div>'; return; }
+    box.innerHTML = weeks.map(w =>
+      '<div class="event-item"><span class="badge blue">POS</span>' +
+      '<div style="flex:1"><b>' + esc(weekLabel(w)) + '</b> <span class="muted">· ' + fmtNum(counts[w]) + ' productos</span></div>' +
+      '<button class="btn ghost small" type="button" data-del-week="' + esc(w) + '">Eliminar</button></div>'
+    ).join('');
+  } catch (e) {
+    box.innerHTML = '<div class="empty">No se pudieron cargar las semanas: ' + esc(e.message) + '</div>';
+  }
+}
+function openDeleteWeekModal(week){
+  state.pendingDelWeek = week;
+  $('delWeekModalText').textContent = '¿Eliminar las ventas de la ' + weekLabel(week) + '? Esta acción borra el reporte subido de esa semana (ventas con costo y staging). No se tocan las ventas por mesero.';
+  $('delWeekModal').style.display = 'flex';
+}
+function closeDeleteWeekModal(){ $('delWeekModal').style.display = 'none'; state.pendingDelWeek = null; }
+async function confirmDeleteWeek(){
+  const week = state.pendingDelWeek;
+  if (!week || !LIVE) return;
+  const msg = $('delWeekMsg');
+  closeDeleteWeekModal();
+  try {
+    msg.className = 'form-msg'; msg.textContent = 'Eliminando la ' + weekLabel(week) + '…';
+    await sb('weekly_sales', { method: 'DELETE', query: { week_start: 'eq.' + week, source: 'eq.soft_restaurant' } });
+    await sb('ventas_pos_import', { method: 'DELETE', query: { week_start: 'eq.' + week } });
+    msg.className = 'form-msg ok';
+    msg.textContent = 'Eliminada la ' + weekLabel(week) + '.';
+    await loadAll();
+  } catch (e) {
+    msg.className = 'form-msg err';
+    msg.textContent = 'No se pudo eliminar: ' + e.message + (e.data && e.data.message ? ' · ' + e.data.message : '');
+  }
 }
 
 /* ---------------- DOCUMENTOS ---------------- */
@@ -1905,9 +2048,10 @@ async function onHorariosWeekChange(){
 }
 function renderHorarios(){
   const days = weekDays(state.horariosWeek);
-  $('horariosSub').textContent = weekRangeTitle(state.horariosWeek) + ' · toca una celda para elegir entrada y salida, cierre, OFF o falta.';
+  $('horariosSub').textContent = weekLabel(state.horariosWeek) + ' · ' + weekRangeTitle(state.horariosWeek) + ' · toca una celda para elegir entrada y salida, cierre, OFF o falta.';
   const hwInput = $('horariosWeekInput');
   if (hwInput) hwInput.value = state.horariosWeek;
+  const hwLab = $('horariosWeekLabel'); if (hwLab) hwLab.textContent = weekLabel(state.horariosWeek);
   const notice = $('horariosNotice');
   if (!LIVE) {
     notice.innerHTML = '<div class="notice err">Sin conexión a Supabase: los horarios no se pueden cargar ni guardar. Configura las variables en Vercel primero.</div>';
@@ -1958,7 +2102,7 @@ function renderHorarios(){
 }
 function renderEventList(days){
   const box = $('eventList');
-  if (!state.eventos.length) { box.innerHTML = '<div class="empty">Sin reservaciones esta semana.</div>'; return; }
+  if (!state.eventos.length) { box.innerHTML = '<div class="empty">Sin reservaciones en la ' + weekLabel(state.horariosWeek) + '.</div>'; return; }
   box.innerHTML = state.eventos.map(e => {
     const d = days.find(x => toISODate(x) === e.dia);
     const label = d ? DIAS[days.indexOf(d)] + ' ' + d.getDate() + ' ' + MESES[d.getMonth()] : e.dia;
@@ -2045,7 +2189,7 @@ function openShiftModal(staffId, dia){
   const d = days.find(x => toISODate(x) === dia);
   const label = d ? DIAS[days.indexOf(d)] + ' ' + d.getDate() + ' ' + MESES[d.getMonth()] : dia;
   $('shiftModalTitle').textContent = 'Turno · ' + (s ? s.nombre : '');
-  $('shiftModalSub').textContent = label + ' · semana del ' + fmtWeek(state.horariosWeek);
+  $('shiftModalSub').textContent = label + ' · ' + weekLabel(state.horariosWeek);
   const cur = (state.horarios.find(h => h.staff_id === staffId && h.dia === dia) || {}).turno || '';
   const p = parseShift(cur);
   fillHourSelect($('shInH')); fillHourSelect($('shOutH'));
@@ -2185,17 +2329,17 @@ function exportReservacionesPDF(){
       '<td class="num">' + (e.anticipo != null && num(e.anticipo) > 0 ? fmtMoney(e.anticipo) : '—') + '</td>' +
       '<td>' + esc(e.nota || '') + '</td></tr>';
   }).join('');
-  const html = '<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><title>Reservaciones · ' + weekRangeTitle(state.horariosWeek) + '</title><style>' +
+  const html = '<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><title>Reservaciones · ' + weekLabel(state.horariosWeek) + '</title><style>' +
     'body{font-family:-apple-system,"Segoe UI",Roboto,Arial,sans-serif;color:#1b2530;margin:24px}' +
     'h1{font-size:22px;margin:0 0 4px} p.sub{color:#667085;margin:0 0 18px}' +
     'table{width:100%;border-collapse:collapse;font-size:13px} th,td{border:1px solid #cbd5d1;padding:7px 8px;text-align:left}' +
     'th{background:#0d2e20;color:#fff} td.num{text-align:right}' +
     '@media print{body{margin:0} @page{size:landscape}}' +
     '</style></head><body>' +
-    '<h1>Reservaciones · ' + weekRangeTitle(state.horariosWeek) + '</h1>' +
+    '<h1>Reservaciones · ' + weekLabel(state.horariosWeek) + '</h1>' +
     '<p class="sub">Cántaros, Cazos y Cantares · Calle Sol #840 Oriente, Ciudad Juárez</p>' +
     '<table><thead><tr><th>Día</th><th>Hora</th><th>Reservación</th><th>Tipo</th><th>Personas</th><th>Anticipo</th><th>Notas</th></tr></thead><tbody>' +
-    (rows || '<tr><td colspan="7">Sin reservaciones esta semana.</td></tr>') + '</tbody></table>' +
+    (rows || '<tr><td colspan="7">Sin reservaciones en la ' + weekLabel(state.horariosWeek) + '.</td></tr>') + '</tbody></table>' +
     '</body></html>';
   const win = window.open('', '_blank');
   if (!win) { msg.className = 'form-msg err'; msg.textContent = 'El navegador bloqueó la ventana: permite las ventanas emergentes para este sitio y vuelve a intentar.'; return; }
@@ -2236,8 +2380,8 @@ function drawScheduleCanvas(){
   }
   ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, W, H);
   ctx.textBaseline = 'middle'; ctx.textAlign = 'left';
-  ctx.fillStyle = '#1b2530'; ctx.font = '800 34px ' + FONT;
-  ctx.fillText(fit(weekRangeTitle(state.horariosWeek), W - pad * 2 - 12, '800 34px ' + FONT), pad + 6, 42);
+  ctx.fillStyle = '#1b2530'; ctx.font = '800 30px ' + FONT;
+  ctx.fillText(fit('Semana ' + weekNum(state.horariosWeek) + ' · ' + weekRangeTitle(state.horariosWeek), W - pad * 2 - 12, '800 30px ' + FONT), pad + 6, 42);
   ctx.fillStyle = '#667085'; ctx.font = '600 21px ' + FONT;
   ctx.fillText('Cántaros, Cazos y Cantares · Calle Sol #840 Oriente, Ciudad Juárez', pad + 6, 78);
   let y = titleH;
@@ -2328,12 +2472,12 @@ function drawScheduleCanvas(){
    por WhatsApp desde el teléfono) y descargarla como PNG. */
 function showScheduleImage(){
   const canvas = drawScheduleCanvas();
-  $('imgModalTitle').textContent = weekRangeTitle(state.horariosWeek);
+  $('imgModalTitle').textContent = 'Semana ' + weekNum(state.horariosWeek) + ' · ' + weekRangeTitle(state.horariosWeek);
   const dataUrl = canvas.toDataURL('image/png');
   $('imgModalImg').src = dataUrl;
   const dl = $('imgModalDownload');
   dl.href = dataUrl;
-  dl.download = 'horarios-' + state.horariosWeek + '.png';
+  dl.download = 'horarios-semana' + weekNum(state.horariosWeek) + '-' + state.horariosWeek + '.png';
   $('imgModal').style.display = 'flex';
 }
 function closeScheduleImage(){ $('imgModal').style.display = 'none'; }
@@ -2345,7 +2489,7 @@ async function exportScheduleXLSX(){
     const XLSX = await ensureXLSX();
     const days = weekDays(state.horariosWeek);
     const aoa = [
-      [weekRangeTitle(state.horariosWeek)],
+      ['Semana ' + weekNum(state.horariosWeek) + ' · ' + weekRangeTitle(state.horariosWeek)],
       ['Cántaros, Cazos y Cantares · Calle Sol #840 Oriente, Ciudad Juárez'],
       [],
       ['#', 'Nombre'].concat(days.map((d, i) => DIAS[i])),
@@ -2376,9 +2520,9 @@ async function exportScheduleXLSX(){
     ws['!cols'] = [{ wch: 6 }, { wch: 30 }, { wch: 14 }, { wch: 14 }, { wch: 14 }, { wch: 14 }, { wch: 14 }, { wch: 14 }, { wch: 14 }];
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, 'Horarios');
-    XLSX.writeFile(wb, 'horarios-' + state.horariosWeek + '.xlsx');
+    XLSX.writeFile(wb, 'horarios-semana' + weekNum(state.horariosWeek) + '-' + state.horariosWeek + '.xlsx');
     msg.className = 'form-msg ok';
-    msg.textContent = 'Excel descargado: horarios-' + state.horariosWeek + '.xlsx';
+    msg.textContent = 'Excel descargado: horarios-semana' + weekNum(state.horariosWeek) + '-' + state.horariosWeek + '.xlsx';
   } catch (err) {
     msg.className = 'form-msg err';
     msg.textContent = 'No se pudo exportar a Excel: ' + err.message;
@@ -2416,7 +2560,7 @@ function exportSchedulePDF(){
     if (e.anticipo != null && num(e.anticipo) > 0) det.push('anticipo ' + fmtMoney(e.anticipo));
     return '<li><b>' + esc(label) + '</b> · ' + esc(e.titulo) + (det.length ? ' · ' + det.join(' · ') : '') + (e.nota ? ' — ' + esc(e.nota) : '') + '</li>';
   }).join('');
-  const html = '<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><title>' + weekRangeTitle(state.horariosWeek) + '</title><style>' +
+  const html = '<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><title>Semana ' + weekNum(state.horariosWeek) + ' · ' + weekRangeTitle(state.horariosWeek) + '</title><style>' +
     'body{font-family:-apple-system,"Segoe UI",Roboto,Arial,sans-serif;color:#1b2530;margin:24px}' +
     'h1{font-size:22px;margin:0 0 4px} p.sub{color:#667085;margin:0 0 18px}' +
     'table{width:100%;border-collapse:collapse;font-size:13px} th,td{border:1px solid #cbd5d1;padding:7px 8px;text-align:center}' +
@@ -2426,12 +2570,12 @@ function exportSchedulePDF(){
     'h2{font-size:15px;margin:22px 0 6px} li{margin:4px 0}' +
     '@media print{body{margin:0} @page{size:landscape}}' +
     '</style></head><body>' +
-    '<h1>' + weekRangeTitle(state.horariosWeek) + '</h1>' +
+    '<h1>Semana ' + weekNum(state.horariosWeek) + ' · ' + weekRangeTitle(state.horariosWeek) + '</h1>' +
     '<p class="sub">Cántaros, Cazos y Cantares · Calle Sol #840 Oriente, Ciudad Juárez</p>' +
     '<table><thead><tr><th>#</th><th style="text-align:left">Nombre</th>' +
     days.map((d, i) => '<th>' + DIAS[i] + '</th>').join('') + '</tr></thead><tbody>' +
     (rowsHtml || '<tr><td colspan="9">Sin personal registrado.</td></tr>') + '</tbody></table>' +
-    (evs ? '<h2>Reservaciones de la semana</h2><ul>' + evs + '</ul>' : '') +
+    (evs ? '<h2>Reservaciones de la ' + weekLabel(state.horariosWeek) + '</h2><ul>' + evs + '</ul>' : '') +
     '<p class="sub" style="margin-top:18px">OFF = descanso · F = falta · 11:00 AM - CL = entrada a cierre · 2:00 PM - 5:00 PM = entrada y salida</p>' +
     '</body></html>';
   const win = window.open('', '_blank');
@@ -2452,7 +2596,7 @@ function showView(name, gotoId){
   document.querySelectorAll('[data-view]').forEach(b => b.classList.toggle('active', b.getAttribute('data-view') === name));
   if (name === 'inv-barra') renderInventory('barra');
   if (name === 'inv-cocina') renderInventory('cocina');
-  if (name === 'captura') refreshWaiterSales();
+  if (name === 'captura') { refreshWaiterSales(); refreshUploadedWeeks(); }
   if (name === 'docs') renderDocs();
   if (name === 'horarios') renderHorarios();
   if (gotoId) {
@@ -2493,6 +2637,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.querySelectorAll('[data-view]').forEach(b => b.addEventListener('click', () => showView(b.getAttribute('data-view'), b.getAttribute('data-goto'))));
   const monday = toISODate(mondayOf(new Date()));
   ['fWeek', 'posWeek', 'csvWeek', 'horariosWeekInput'].forEach(id => { $(id).value = monday; });
+  syncWeekLabels();
+  ['posWeek', 'csvWeek', 'fWeek'].forEach(id => { $(id).addEventListener('change', syncWeekLabels); });
   $('weekSelect').addEventListener('change', async () => {
     state.selectedWeek = $('weekSelect').value;
     setStatus(null, 'Cargando periodo…');
@@ -2513,6 +2659,26 @@ document.addEventListener('DOMContentLoaded', async () => {
   $('waiterSortBtn').addEventListener('click', () => { state.waiterSortDir *= -1; renderWaiterCards(); });
   $('posUploadBtn').addEventListener('click', uploadPOS);
   $('csvUploadBtn').addEventListener('click', uploadInvCSV);
+  // Detectar la semana del nombre del archivo al elegirlo (ej. "Semana 48").
+  $('posFile').addEventListener('change', () => {
+    const f = $('posFile').files[0]; if (!f) return;
+    const m = parseWeekRef(f.name, state.selectedWeek);
+    if (m) { $('posWeek').value = m; syncWeekLabels(); $('posMsg').className = 'form-msg'; $('posMsg').textContent = 'Semana ' + weekNum(m) + ' detectada del nombre del archivo.'; }
+  });
+  $('csvFile').addEventListener('change', () => {
+    const f = $('csvFile').files[0]; if (!f) return;
+    const m = parseWeekRef(f.name, state.selectedWeek);
+    if (m) { $('csvWeek').value = m; syncWeekLabels(); $('csvMsg').className = 'form-msg'; $('csvMsg').textContent = 'Semana ' + weekNum(m) + ' detectada del nombre del archivo.'; }
+  });
+  // Semanas de ventas cargadas: eliminar una semana subida (reporte POS).
+  $('uploadedWeeksList').addEventListener('click', e => {
+    const btn = e.target.closest('[data-del-week]');
+    if (btn) openDeleteWeekModal(btn.getAttribute('data-del-week'));
+  });
+  $('delWeekConfirmBtn').addEventListener('click', confirmDeleteWeek);
+  $('delWeekCancelBtn').addEventListener('click', closeDeleteWeekModal);
+  $('delWeekModalClose').addEventListener('click', closeDeleteWeekModal);
+  $('delWeekModal').addEventListener('click', e => { if (e.target === $('delWeekModal')) closeDeleteWeekModal(); });
   $('docForm').addEventListener('submit', uploadDoc);
   $('prodSearch').addEventListener('input', () => { state.prodQuery = $('prodSearch').value; renderProductsTable(); });
   document.querySelectorAll('#productsTable th[data-sort]').forEach(th => th.addEventListener('click', () => {
