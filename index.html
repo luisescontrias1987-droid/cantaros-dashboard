@@ -296,7 +296,32 @@ html[data-theme="light"] input,html[data-theme="light"] select,html[data-theme="
   backdrop-filter:blur(12px) saturate(1.3);-webkit-backdrop-filter:blur(12px) saturate(1.3)}
 html[data-theme="light"] th{backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}
 html[data-theme="light"] .modal{backdrop-filter:blur(24px) saturate(1.4);-webkit-backdrop-filter:blur(24px) saturate(1.4)}
-html[data-theme="light"] .mobilenav{backdrop-filter:blur(18px) saturate(1.4);-webkit-backdrop-filter:blur(18px) saturate(1.4)}
+html[data-theme="light"] .mobilenav{backdrop-filter:blur(18px) saturate(1.4);-webkit-backdrop-filter:blur(18px) saturate(1.4)}/* ---- v3: celdas de turno como botón, modales pequeños, tarjetas de mesero ---- */
+.sched-cell-btn{width:100%;min-width:86px;min-height:34px;text-align:center;text-transform:uppercase;font-weight:700;font-size:13px;padding:4px 2px;border-radius:10px;border:1px solid var(--border);background:var(--surface);color:var(--text);cursor:pointer}
+.sched-cell-btn:hover{outline:2px solid var(--accent);outline-offset:1px}
+.sched-cell-btn.cell-off{background:#dbeafe;color:#175cd3;border-color:#bfd3f7}
+.sched-cell-btn.cell-f{background:#fdecea;color:#c0392b;border-color:#f5c1bb}
+.sched-cell-btn.cell-work{background:var(--surface-2)}
+.sched-cell-btn.cell-empty{color:var(--muted);font-weight:600}
+html[data-theme="dark"] .sched-cell-btn.cell-off{background:#1a2c4d;color:#7aa7f5;border-color:#2c4a7a}
+html[data-theme="dark"] .sched-cell-btn.cell-f{background:#3d1d1a;color:#f0857a;border-color:#6b2a25}
+.name-cell .mini-btn{margin-left:6px}
+.mini-btn{display:inline-flex;align-items:center;justify-content:center;min-width:24px;height:24px;padding:0 5px;border-radius:8px;border:1px solid var(--border);background:var(--surface-2);color:var(--muted);font-size:12px;cursor:pointer;vertical-align:middle}
+.mini-btn:hover{color:var(--text);border-color:var(--accent)}
+.mini-btn.undo{min-width:0;padding:0 8px;background:var(--accent-soft);color:var(--accent-text);border-color:var(--accent);font-weight:700}
+.modal.small{max-width:440px}
+.modal.small .modal-body{padding:16px}
+.time-row{display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap}
+.time-row select{min-width:70px}
+.quick-row{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0}
+.quick-row .btn.active{outline:2px solid var(--accent);outline-offset:1px}
+.hl-flash{animation:hlFlash 2.4s ease}
+@keyframes hlFlash{0%,100%{box-shadow:var(--shadow)}20%{box-shadow:0 0 0 3px var(--accent)}}
+.waiter-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px}
+.waiter-card .w-total{font-size:26px;font-weight:800;margin:2px 0 6px}
+.waiter-card .w-sub{font-size:12px;color:var(--muted)}
+.staff-undo-bar{display:none;margin:0 0 12px;padding:10px 12px;border-radius:12px;background:var(--accent-soft);color:var(--accent-text);font-weight:600;align-items:center;gap:10px;flex-wrap:wrap}
+.staff-undo-bar.show{display:flex}
 </style>
 </head>
 <body>
@@ -319,6 +344,7 @@ html[data-theme="light"] .mobilenav{backdrop-filter:blur(18px) saturate(1.4);-we
       <div class="nav-label">Inventario</div>
       <button class="nav-btn" data-view="inv-barra"><span class="ic">🍺</span>Inventario de barra</button>
       <button class="nav-btn" data-view="inv-cocina"><span class="ic">🥬</span>Inventario de cocina</button>
+      <button class="nav-btn" data-view="captura" data-goto="posUploadCard"><span class="ic">📥</span>Subir reporte POS</button>
       <div class="nav-label">Empresa</div>
       <button class="nav-btn" data-view="docs"><span class="ic">📚</span>Documentos</button>
     </nav>
@@ -468,43 +494,38 @@ html[data-theme="light"] .mobilenav{backdrop-filter:blur(18px) saturate(1.4);-we
       <div class="page-head">
         <div>
           <h2>Captura semanal</h2>
-          <p>Lo que el reporte de Soft Restaurant no trae: ventas por mesero y por turno, cortesías y descuentos. Todo se guarda en Supabase y se ve en el panel.</p>
+          <p>Total de venta por mesero y por semana. El reporte de Soft Restaurant no trae mesero, así que esta captura es la única fuente de esa dimensión. No se suma al panel (que viene del reporte POS) para no duplicar ventas.</p>
         </div>
       </div>
 
       <div class="card">
         <h3>Venta por mesero</h3>
-        <p class="card-sub">Una fila por producto vendido. El costo se toma del catálogo automáticamente.</p>
+        <p class="card-sub">Solo el total de venta del mesero en la semana. Si vuelves a capturar al mismo mesero en la misma semana, se actualiza el total.</p>
         <form id="saleForm">
-          <div class="form-grid">
+          <div class="form-grid" style="grid-template-columns:1fr 1fr 1fr">
+            <div><label for="fWaiter">Mesero</label><select id="fWaiter" required><option value="">— Elige un mesero —</option></select></div>
             <div><label for="fWeek">Semana (lunes)</label><input type="date" id="fWeek" required></div>
-            <div><label for="fWaiter">Mesero</label><input type="text" id="fWaiter" placeholder="Nombre del mesero" required></div>
-            <div><label for="fShift">Turno</label><input type="text" id="fShift" placeholder="Ej. Matutino, Vespertino, Nocturno" required></div>
-            <div class="full"><label for="fProduct">Producto</label><select id="fProduct" required><option value="">— Elige un producto —</option></select></div>
-            <div><label for="fQty">Cantidad</label><input type="number" id="fQty" min="0.5" step="0.5" value="1" required></div>
-            <div><label for="fPrice">Precio unitario ($)</label><input type="number" id="fPrice" min="0" step="0.01" required></div>
-            <div><label for="fDiscount">Descuento ($)</label><input type="number" id="fDiscount" min="0" step="0.01" value="0"></div>
-            <div class="full check-row"><input type="checkbox" id="fCourtesy"><label for="fCourtesy" style="margin:0">Es cortesía (no se cobra; se registra como venta en $0)</label></div>
+            <div><label for="fTotal">Total de venta ($)</label><input type="number" id="fTotal" min="0" step="0.01" placeholder="0.00" required></div>
           </div>
-          <div style="margin-top:14px;display:flex;gap:10px;align-items:center;flex-wrap:wrap">
-            <button class="btn" type="submit" id="saleSubmit">Guardar venta</button>
-            <span class="small muted" id="salePreview"></span>
-          </div>
+          <div style="margin-top:14px"><button class="btn" type="submit" id="saleSubmit">Guardar venta</button></div>
           <div class="form-msg" id="saleMsg"></div>
         </form>
       </div>
 
       <div class="card">
-        <h3>Capturas manuales de la semana</h3>
-        <p class="card-sub" id="manualSub">Ventas registradas a mano en la semana seleccionada.</p>
-        <div class="table-wrap"><table id="manualTable">
-          <thead><tr><th>Mesero</th><th>Turno</th><th>Producto</th><th class="num">Cant.</th><th class="num">Precio</th><th class="num">Desc.</th><th class="num">Total</th><th>Cortesía</th></tr></thead>
-          <tbody></tbody>
-        </table></div>
+        <h3>Ventas por mesero</h3>
+        <p class="card-sub">Un recuadro por mesero con su total de la semana y su desempeño de las últimas semanas. Toca el botón de orden para ver de mayor a menor venta o al revés.</p>
+        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:12px">
+          <label for="waiterWeek" style="font-weight:700;font-size:13px">Semana</label>
+          <select id="waiterWeek" style="max-width:220px"></select>
+          <button class="btn ghost small" id="waiterSortBtn" type="button">↓ Mayor a menor</button>
+        </div>
+        <div class="waiter-cards" id="waiterCards"></div>
+        <div class="form-msg" id="waiterMsg"></div>
       </div>
 
       <div class="grid2">
-        <div class="card">
+        <div class="card" id="posUploadCard">
           <h3>Subir reporte de Soft Restaurant (Excel o CSV)</h3>
           <p class="card-sub">El archivo del reporte tal cual sale del POS, en Excel (.xlsx) o CSV. Se guarda en la tabla de staging y se cruza con el catálogo para calcular costo y margen.</p>
           <div class="file-box">
@@ -536,7 +557,7 @@ html[data-theme="light"] .mobilenav{backdrop-filter:blur(18px) saturate(1.4);-we
       <div class="page-head">
         <div>
           <h2>Horarios del staff</h2>
-          <p id="horariosSub">Semana del … · turnos por área. Escribe el código del turno y se guarda solo.</p>
+          <p id="horariosSub">Semana del … · toca una celda para elegir entrada y salida, cierre, OFF o falta.</p>
         </div>
         <div style="display:flex;gap:8px;flex-wrap:wrap">
           <button class="btn ghost small" id="viewImgBtn" type="button">🖼️ Ver imagen</button>
@@ -545,12 +566,13 @@ html[data-theme="light"] .mobilenav{backdrop-filter:blur(18px) saturate(1.4);-we
         </div>
       </div>
       <div id="horariosNotice"></div>
+      <div class="staff-undo-bar" id="staffUndoBar"><span id="staffUndoText"></span><button class="btn small" id="staffUndoBtn" type="button">↩ Deshacer</button><span class="small" id="staffUndoCount"></span></div>
       <div class="legend-codes">
         <span class="badge blue">OFF · descanso</span>
         <span class="badge red">F · falta / inasistencia</span>
-        <span class="badge green">11-CL · entrada 11:00 a cierre (regularmente 12:00am)</span>
-        <span class="badge grey">11:00-20:00 · entrada y salida</span>
-        <span class="badge grey">Vacío · sin turno</span>
+        <span class="badge green">11:00 AM - CL · entrada a cierre (regularmente 12:00am)</span>
+        <span class="badge grey">2:00 PM - 5:00 PM · entrada y salida (12 hrs)</span>
+        <span class="badge grey">＋ · toca la celda para elegir la hora</span>
       </div>
       <div class="week-picker">
         <label for="horariosWeekInput">Semana</label>
@@ -563,7 +585,7 @@ html[data-theme="light"] .mobilenav{backdrop-filter:blur(18px) saturate(1.4);-we
           <tbody></tbody>
         </table></div>
         <div class="form-msg" id="schedMsg"></div>
-        <p class="small muted" style="margin:12px 0 0">Escribe el turno libre en cada celda y se guarda solo: <b>11-CL</b> o <b>11:00-CL</b> (entrada a cierre), <b>11:00-20:00</b> (entrada y salida), <b>OFF</b> (descanso), <b>F</b> (falta). Vacía la celda para quitar el turno. Si una semana no tiene turnos guardados, las celdas quedan vacías: nunca se copia otra semana.</p>
+        <p class="small muted" style="margin:12px 0 0">Toca una celda y elige la hora de entrada y salida en formato de 12 horas, el cierre (CL), OFF o falta. El botón ⋯ junto a cada nombre sirve para editar o eliminar a esa persona; si te equivocas, tienes 10 segundos para deshacerlo. Si una semana no tiene turnos guardados, las celdas quedan vacías: nunca se copia otra semana.</p>
       </div>
       <div class="grid2">
         <div class="card">
@@ -579,33 +601,30 @@ html[data-theme="light"] .mobilenav{backdrop-filter:blur(18px) saturate(1.4);-we
           </form>
         </div>
         <div class="card">
-          <h3>Eventos y reservaciones de la semana</h3>
-          <p class="card-sub">Eventos especiales o reservaciones grandes: aparecen en la columna de su día y en la lista de abajo.</p>
+          <h3>Agregar reservación</h3>
+          <p class="card-sub">Reservaciones de la semana: aparecen en la columna de su día y en la lista de abajo.</p>
           <form id="eventForm">
             <div class="form-grid" style="grid-template-columns:1fr 1fr">
               <div><label for="evDay">Día</label><select id="evDay" required></select></div>
-              <div><label for="evType">Tipo</label><select id="evType"><option value="evento">Evento especial</option><option value="reservacion">Reservación grande</option></select></div>
-              <div class="full"><label for="evTitle">Título</label><input type="text" id="evTitle" placeholder="Ej. Posada empresa X / 40 personas" required></div>
-              <div class="full"><label for="evNote">Nota (opcional)</label><input type="text" id="evNote" placeholder="Ej. Llegan 7pm, menú especial"></div>
+              <div><label for="evHour">Hora</label><input type="time" id="evHour"></div>
+              <div><label for="evPersonas">Cantidad de personas</label><input type="number" id="evPersonas" min="1" step="1" placeholder="Ej. 20"></div>
+              <div><label for="evTipoEvento">Tipo de evento</label><select id="evTipoEvento"><option>Cumpleaños</option><option>Posada</option><option>Graduación</option><option>Boda</option><option>XV años</option><option>Empresarial</option><option>Otro</option></select></div>
+              <div class="full"><label for="evTitle">Título / nombre de la reservación</label><input type="text" id="evTitle" placeholder="Ej. Posada empresa X" required></div>
+              <div><label for="evAnticipo">Anticipo ($)</label><input type="number" id="evAnticipo" min="0" step="0.01" placeholder="0.00"></div>
+              <div class="full"><label for="evNote">Notas (opcional)</label><input type="text" id="evNote" placeholder="Ej. Llegan 7pm, menú especial"></div>
             </div>
-            <div style="margin-top:12px"><button class="btn" type="submit" id="eventSubmit">Agregar evento</button></div>
+            <div style="margin-top:12px"><button class="btn" type="submit" id="eventSubmit">Agregar reservación</button></div>
             <div class="form-msg" id="eventMsg"></div>
           </form>
         </div>
       </div>
       <div class="card">
-        <h3>Eventos de esta semana</h3>
-        <div id="eventList"></div>
+        <div style="display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap">
+          <h3 style="margin:0">Reservaciones de esta semana</h3>
+          <button class="btn ghost small" id="exportResPdfBtn" type="button">⬇ Exportar PDF</button>
+        </div>
+        <div id="eventList" style="margin-top:8px"></div>
       </div>
-      <datalist id="shiftCodes">
-        <option value="11-CL"></option><option value="10-CL"></option><option value="12-CL"></option>
-        <option value="2-CL"></option><option value="3-CL"></option><option value="4-CL"></option>
-        <option value="5-CL"></option><option value="6-CL"></option><option value="OFF"></option>
-        <option value="F"></option>
-        <option value="11:00-CL"></option><option value="11:00-18:00"></option><option value="11:00-20:00"></option>
-        <option value="11:00-22:00"></option><option value="12:00-20:00"></option><option value="14:00-22:00"></option>
-        <option value="16:00-CL"></option><option value="17:00-CL"></option>
-      </datalist>
       <canvas id="schedCanvas" style="display:none"></canvas>
     </section>
 
@@ -664,7 +683,7 @@ html[data-theme="light"] .mobilenav{backdrop-filter:blur(18px) saturate(1.4);-we
       <div class="page-head">
         <div>
           <h2>Documentos</h2>
-          <p>Manuales, fichas técnicas y menú de la casa. Aquí también está la guía para subir cada semana.</p>
+          <p>Manuales, fichas técnicas y menú de la casa.</p>
         </div>
       </div>
       <div class="card">
@@ -682,40 +701,6 @@ html[data-theme="light"] .mobilenav{backdrop-filter:blur(18px) saturate(1.4);-we
         </form>
       </div>
       <div id="docsList"></div>
-      <div class="card">
-        <h3>Guía de carga semanal</h3>
-        <p class="card-sub">Todo se divide por semana: cada semana se identifica por su lunes (week_start). Hay dos formas de subir cada cosa; elige la que te acomode.</p>
-        <h3 style="font-size:15px;margin-top:14px">📄 Ventas (reporte de Soft Restaurant)</h3>
-        <ol class="steps">
-          <li><b>Opción A — pegar en Supabase:</b> en el panel de Supabase abre <code class="inline">Table Editor → ventas_pos_import → Insert → Paste rows</code> y pega el CSV del reporte tal cual (columnas CLAVE, DESCRIPCION, GRUPO, PRECIO, CANTIDAD, VENTA_TOTAL, COSTO, COSTO_TOTAL, VENTA_COSTO, PRECIO_DE_VENTA, PRECIO_DE_CATALOGO, VENTA_TOTAL_PRECIO_CATALOGO, TASA_IVA), con la semana puesta en <code class="inline">week_start</code>. La app cruza con el catálogo y calcula costo y margen.</li>
-          <li><b>Opción B — subir el archivo en esta app:</b> en <b>Captura semanal → Subir reporte de Soft Restaurant (Excel o CSV)</b>, elige la semana y el archivo Excel (.xlsx) o CSV. La app guarda el staging y genera las ventas con costo automáticamente.</li>
-          <li>Si se pega dos veces la misma semana, la base la rechaza (unique por semana + clave). Para corregirla, se borra esa semana y se vuelve a subir.</li>
-        </ol>
-        <h3 style="font-size:15px;margin-top:18px">🍺 Inventario de barra y cocina</h3>
-        <ol class="steps">
-          <li><b>Opción A — pegar en Supabase:</b> en <code class="inline">Table Editor → inventory_weekly</code> (barra) o <code class="inline">inventory_cocina</code> (cocina), pega las filas de la semana. Solo captura Inicial, Compras, Almacén, Display, Barra y Venta; el resto (total, diferencia, perdido, sobrante y sus $) se calcula solo.</li>
-          <li><b>Opción B — subir el archivo en esta app:</b> en <b>Captura semanal → Subir conteo de inventario (Excel o CSV)</b>, elige el área, la semana y el archivo Excel (.xls/.xlsx) o CSV de la semana. El inventario ya no se captura a mano: siempre se sube el archivo.</li>
-          <li>El sobrante también vale dinero: esta semana el sobrante de barra es $5,592, más que el faltante ($2,253). Revisa los sobrantes grandes (Miller Caguama +59, Tecate Roja Media +58): pueden ser errores de captura o compras no registradas.</li>
-        </ol>
-        <h3 style="font-size:15px;margin-top:18px">🧾 Ventas por mesero, cortesías y descuentos</h3>
-        <ol class="steps">
-          <li>Se capturan aquí mismo, en <b>Captura semanal → Venta por mesero</b>. El reporte del POS no trae mesero, turno ni folio, así que esta captura es la única fuente de esas dimensiones.</li>
-          <li>Las cortesías se marcan con la casilla y se guardan en $0; los descuentos se anotan en pesos en el mismo renglón.</li>
-        </ol>
-        <h3 style="font-size:15px;margin-top:18px">📅 Horarios del staff</h3>
-        <ol class="steps">
-          <li>Antes de usar la vista <b>Horarios</b> por primera vez, corre el archivo <code class="inline">Supabase-Cantaros-Horarios.sql</code> en Supabase → SQL Editor (crea las tablas <code class="inline">staff</code>, <code class="inline">horarios</code> y <code class="inline">eventos</code> y siembra los 18 nombres del personal).</li>
-          <li>Después expón las tres tablas en Supabase → <b>Integrations → Data API</b> (o activa "Default privileges for new entities") para que la app las pueda leer y escribir.</li>
-          <li>Los turnos se escriben directo en la tabla, libres: <b>11-CL</b> (entrada a cierre), <b>11:00-20:00</b> (entrada y salida), <b>OFF</b> (descanso), <b>F</b> (falta); se guardan solos al cambiar de celda. Si una semana no tiene turnos, las celdas quedan vacías: nunca se copia otra semana.</li>
-          <li>Los eventos especiales y reservaciones grandes se agregan en la misma vista y aparecen en la columna de su día. Arriba de la tabla están los botones <b>Ver imagen</b> (muestra la tabla lista para guardar o compartir por WhatsApp), <b>Exportar Excel</b> (descarga el .xlsx de la semana) y <b>Exportar PDF</b> (abre la vista para imprimir o guardar como PDF).</li>
-        </ol>
-        <h3 style="font-size:15px;margin-top:18px">📚 Documentos</h3>
-        <ol class="steps">
-          <li>Antes de subir el primer archivo, corre el archivo <code class="inline">Supabase-Cantaros-Documentos-Storage.sql</code> en Supabase → SQL Editor (crea el bucket público <code class="inline">documentos</code> y sus políticas, y agrega las columnas <code class="inline">file_url</code> y <code class="inline">file_path</code> a la tabla <code class="inline">documents</code>).</li>
-          <li>Después sube el archivo aquí mismo, en <b>Documentos → Subir documento</b> (archivo + título + categoría + nota). Cada documento muestra los botones <b>Ver</b> (abre el archivo en una pestaña) y <b>Descargar</b>.</li>
-          <li>Si la subida falla diciendo que el bucket no existe, es que falta el paso 1.</li>
-        </ol>
-      </div>
     </section>
   </main>
 
@@ -740,6 +725,77 @@ html[data-theme="light"] .mobilenav{backdrop-filter:blur(18px) saturate(1.4);-we
       <button class="btn ghost" id="imgModalClose2" type="button">Cerrar</button>
     </div>
     <p class="small muted" style="margin:10px 0 0">En el teléfono, mantén presionada la imagen para guardarla o compartirla por WhatsApp.</p>
+  </div>
+</div>
+
+<!-- ============ MODAL TURNO 12H (horarios) ============ -->
+<div class="modal-overlay" id="shiftModal" style="display:none">
+  <div class="modal small">
+    <div class="modal-head"><h3 id="shiftModalTitle">Turno</h3><button class="btn ghost small" id="shiftModalClose" type="button">✕</button></div>
+    <div class="modal-body">
+      <p class="small muted" id="shiftModalSub" style="margin:0 0 12px"></p>
+      <div style="margin-bottom:12px"><b>Hora de entrada</b><div class="time-row" style="margin-top:6px">
+        <select id="shInH" aria-label="Hora de entrada"></select>
+        <select id="shInM" aria-label="Minutos de entrada"><option>00</option><option>15</option><option>30</option><option>45</option></select>
+        <select id="shInAP" aria-label="AM o PM de entrada"><option>AM</option><option>PM</option></select>
+      </div></div>
+      <div style="margin-bottom:4px"><b>Hora de salida</b><div class="time-row" style="margin-top:6px">
+        <select id="shOutH" aria-label="Hora de salida"></select>
+        <select id="shOutM" aria-label="Minutos de salida"><option>00</option><option>15</option><option>30</option><option>45</option></select>
+        <select id="shOutAP" aria-label="AM o PM de salida"><option>AM</option><option>PM</option></select>
+        <label class="check-row" style="margin:0"><input type="checkbox" id="shOutCL"> Cierre (CL)</label>
+      </div></div>
+      <div class="quick-row">
+        <button class="btn ghost small" id="shQuickOff" type="button">OFF · Descanso</button>
+        <button class="btn ghost small" id="shQuickF" type="button">F · Falta</button>
+        <button class="btn ghost small" id="shQuickClear" type="button">Limpiar turno</button>
+      </div>
+      <div class="form-msg" id="shiftMsg"></div>
+      <div class="modal-actions">
+        <button class="btn" id="shiftSaveBtn" type="button">Guardar turno</button>
+        <button class="btn ghost" id="shiftCancelBtn" type="button">Cancelar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ MODAL PERSONAL: editar / eliminar ============ -->
+<div class="modal-overlay" id="staffModal" style="display:none">
+  <div class="modal small">
+    <div class="modal-head"><h3 id="staffModalTitle">Personal</h3><button class="btn ghost small" id="staffModalClose" type="button">✕</button></div>
+    <div class="modal-body">
+      <p class="small muted" id="staffModalSub" style="margin:0 0 12px"></p>
+      <div id="staffEditBox" style="display:none">
+        <div class="form-grid" style="grid-template-columns:1fr 1fr">
+          <div><label for="stEditName">Nombre</label><input type="text" id="stEditName"></div>
+          <div><label for="stEditArea">Área</label><select id="stEditArea"><option>COCINA</option><option>BARRA</option><option>AYUDANTE</option><option>MESEROS</option><option>HOSTESS</option><option>CAJA</option></select></div>
+        </div>
+        <div style="margin-top:12px"><button class="btn" id="staffEditSaveBtn" type="button">Guardar cambios</button></div>
+      </div>
+      <div class="modal-actions">
+        <button class="btn ghost" id="staffEditBtn" type="button">✎ Editar</button>
+        <button class="btn ghost" id="staffDeleteBtn" type="button">🗑 Eliminar</button>
+        <button class="btn ghost" id="staffCancelBtn" type="button">Cancelar</button>
+      </div>
+      <div class="form-msg" id="staffModalMsg"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ MODAL PIN (eliminar documento) ============ -->
+<div class="modal-overlay" id="pinModal" style="display:none">
+  <div class="modal small">
+    <div class="modal-head"><h3>Eliminar documento</h3><button class="btn ghost small" id="pinModalClose" type="button">✕</button></div>
+    <div class="modal-body">
+      <p class="small" id="pinModalText" style="margin:0 0 12px"></p>
+      <label for="pinInput">PIN de confirmación</label>
+      <input type="password" id="pinInput" inputmode="numeric" placeholder="••••" autocomplete="off" style="max-width:160px">
+      <div class="form-msg" id="pinMsg"></div>
+      <div class="modal-actions">
+        <button class="btn" id="pinConfirmBtn" type="button">Eliminar</button>
+        <button class="btn ghost" id="pinCancelBtn" type="button">Cancelar</button>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -786,6 +842,15 @@ const state = {
   prodSort: { key: 'neta', dir: -1 },   // orden de la tabla "Productos vendidos"
   groupSort: { key: 'neta', dir: -1 },  // orden de la tabla "Top por grupo"
   prodQuery: '',                        // buscador de "Productos vendidos"
+  ventasMeseroAll: [],   // todas las filas de ventas_mesero (mini gráfica)
+  waiterWeeks: [],       // semanas con ventas por mesero, desc
+  waiterWeek: FALLBACK_WEEK,
+  waiterSortDir: -1,     // -1 mayor a menor, 1 menor a mayor
+  undoStaff: null,       // {id, prev:{nombre,area,activo}, kind, until}
+  shiftCtx: null,        // {staffId, dia} del modal de turno
+  shiftMode: 'range',    // range | off | falta | clear
+  staffCtx: null,        // {id, prev} del modal de personal
+  pendingDocDelete: null, // {id, file_path, title} del modal PIN
 };
 
 /* ---------------- utilidades ---------------- */
@@ -795,6 +860,23 @@ function fmtMoney(n){ if(n==null||n===''||isNaN(Number(n))) return '—'; return
 function fmtNum(n){ if(n==null||n===''||isNaN(Number(n))) return '—'; return Number(n).toLocaleString('es-MX'); }
 function fmtPct(n){ if(n==null||isNaN(Number(n))) return '—'; return (Number(n)*100).toFixed(1).replace('.',',') + ' %'; }
 function fmtWeek(d){ if(!d) return '—'; const p = String(d).split('-'); if(p.length!==3) return String(d); return Number(p[2]) + ' ' + MESES[Number(p[1])-1] + ' ' + p[0]; }
+const MESES_LARGOS = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+function weekRangeTitle(iso){ // "Horario de la semana del 23 al 29 de noviembre de 2026"
+  const days = weekDays(iso); if (!days.length) return 'Horario de la semana';
+  const a = days[0], b = days[6];
+  if (a.getMonth() === b.getMonth() && a.getFullYear() === b.getFullYear())
+    return 'Horario de la semana del ' + a.getDate() + ' al ' + b.getDate() + ' de ' + MESES_LARGOS[a.getMonth()] + ' de ' + a.getFullYear();
+  if (a.getFullYear() === b.getFullYear())
+    return 'Horario de la semana del ' + a.getDate() + ' de ' + MESES_LARGOS[a.getMonth()] + ' al ' + b.getDate() + ' de ' + MESES_LARGOS[b.getMonth()] + ' de ' + a.getFullYear();
+  return 'Horario de la semana del ' + a.getDate() + ' de ' + MESES_LARGOS[a.getMonth()] + ' de ' + a.getFullYear() + ' al ' + b.getDate() + ' de ' + MESES_LARGOS[b.getMonth()] + ' de ' + b.getFullYear();
+}
+function fmtHour12(hhmm){ // "19:00" -> "7:00 PM"; "7:30" -> "7:30 AM"
+  if (!hhmm) return '';
+  const p = String(hhmm).split(':'); let h = parseInt(p[0], 10); const m = String(p[1] || '00').padStart(2, '0');
+  if (isNaN(h)) return String(hhmm);
+  const ap = h >= 12 ? 'PM' : 'AM'; h = h % 12; if (h === 0) h = 12;
+  return h + ':' + m + ' ' + ap;
+}
 function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 function mondayOf(d){ const x = new Date(d.getFullYear(), d.getMonth(), d.getDate()); const day = (x.getDay()+6)%7; x.setDate(x.getDate()-day); return x; }
 function toISODate(d){ return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0'); }
@@ -1409,58 +1491,106 @@ function renderInventory(area){
 }
 
 /* ---------------- CAPTURA ---------------- */
-function fillProductSelect(){
-  const sel = $('fProduct');
-  sel.innerHTML = '<option value="">— Elige un producto —</option>' + state.products.map(p =>
-    '<option value="' + esc(p.clave) + '">' + esc(p.nombre) + ' · $' + fmtNum(p.precio_pos) + '</option>').join('');
+/* ---------------- ventas por mesero (tabla ventas_mesero) ---------------- */
+// Solo atribución por mesero: NO se suma al panel (que viene del POS).
+function activeWaiters(){ return state.staff.filter(s => s.area === 'MESEROS'); }
+function fillWaiterSelect(){
+  const sel = $('fWaiter');
+  const list = activeWaiters();
+  if (!list.length) { sel.innerHTML = '<option value="">— Sin meseros activos (corre el SQL de horarios) —</option>'; return; }
+  sel.innerHTML = '<option value="">— Elige un mesero —</option>' + list.map(s =>
+    '<option value="' + esc(s.id) + '">' + esc(s.nombre) + '</option>').join('');
 }
-function updateSalePreview(){
-  const p = state.productsByClave[$('fProduct').value];
-  const qty = num($('fQty').value, 1), price = num($('fPrice').value), disc = num($('fDiscount').value);
-  const courtesy = $('fCourtesy').checked;
-  if (!p) { $('salePreview').textContent = ''; return; }
-  const total = courtesy ? 0 : Math.max(0, qty * price - disc);
-  $('salePreview').textContent = 'Total: ' + fmtMoney(total) + (courtesy ? ' (cortesía)' : '') + ' · Costo: ' + fmtMoney(qty * num(p.costo_unitario)) + ' · Margen: ' + fmtMoney(total / 1.08 - qty * num(p.costo_unitario));
+async function refreshWaiterSales(){
+  // Carga meseros activos (de Horarios) y ventas por mesero; dibuja tarjetas.
+  if (!state.horariosReady) { try { await loadHorariosData(); } catch (e) {} }
+  fillWaiterSelect();
+  const box = $('waiterCards');
+  if (!LIVE) { if (box) box.innerHTML = '<div class="empty">Sin conexión a Supabase.</div>'; return; }
+  try {
+    const all = await sb('ventas_mesero', { select: '*', order: 'week_start.asc', limit: 1000 }) || [];
+    state.ventasMeseroAll = all;
+    const weeks = {};
+    all.forEach(r => { weeks[r.week_start] = true; });
+    state.weeks.forEach(w => { weeks[w.week_start] = true; });
+    const list = Object.keys(weeks).sort().reverse();
+    if (!list.length) list.push(FALLBACK_WEEK);
+    state.waiterWeeks = list;
+    if (list.indexOf(state.waiterWeek) === -1) state.waiterWeek = list[0];
+    const sel = $('waiterWeek');
+    sel.innerHTML = list.map(w => '<option value="' + w + '"' + (w === state.waiterWeek ? ' selected' : '') + '>Semana del ' + fmtWeek(w) + '</option>').join('');
+    sel.value = state.waiterWeek;
+    renderWaiterCards();
+  } catch (e) {
+    if (box) box.innerHTML = '<div class="empty">No se pudieron cargar las ventas por mesero: ' + esc(e.message) + '. Corre el archivo <b>Supabase-Cantaros-v3-Horarios-Ventas.sql</b> en Supabase y expón la tabla <b>ventas_mesero</b> en Integrations → Data API.</div>';
+  }
 }
-async function submitSale(e){
+function waiterSeries(staffId){
+  // Últimas 8 semanas con venta de este mesero, en orden cronológico.
+  const byWeek = {};
+  state.ventasMeseroAll.forEach(r => { if (r.staff_id === staffId) byWeek[r.week_start] = num(r.total); });
+  return Object.keys(byWeek).sort().slice(-8).map(w => ({ week: w, total: byWeek[w] }));
+}
+function miniBars(series){
+  if (!series.length) return '<div class="small muted">Sin historial.</div>';
+  const max = Math.max.apply(null, series.map(s => s.total).concat([1]));
+  const W = 220, H = 56, bw = 18, gap = 6;
+  const bars = series.map((s, i) => {
+    const h = Math.max(3, Math.round(s.total / max * (H - 18)));
+    const x = 4 + i * (bw + gap);
+    return '<rect x="' + x + '" y="' + (H - 14 - h) + '" width="' + bw + '" height="' + h + '" rx="3" fill="var(--accent)"><title>' + fmtWeek(s.week) + ': ' + fmtMoney(s.total) + '</title></rect>';
+  }).join('');
+  const labels = series.map((s, i) => {
+    const x = 4 + i * (bw + gap) + bw / 2;
+    return '<text x="' + x + '" y="' + (H - 2) + '" font-size="8" fill="var(--muted)" text-anchor="middle">' + s.week.slice(5).replace('-', '/') + '</text>';
+  }).join('');
+  return '<svg width="100%" viewBox="0 0 ' + W + ' ' + H + '" style="max-width:230px;display:block">' + bars + labels + '</svg>';
+}
+function renderWaiterCards(){
+  const box = $('waiterCards');
+  const week = state.waiterWeek;
+  const rows = state.ventasMeseroAll.filter(r => r.week_start === week);
+  const btn = $('waiterSortBtn');
+  btn.textContent = state.waiterSortDir === -1 ? '↓ Mayor a menor' : '↑ Menor a mayor';
+  if (!rows.length) { box.innerHTML = '<div class="empty">Aún no hay ventas por mesero en la semana del ' + fmtWeek(week) + '.</div>'; return; }
+  rows.sort((a, b) => (num(a.total) - num(b.total)) * state.waiterSortDir);
+  box.innerHTML = rows.map(r => {
+    const series = waiterSeries(r.staff_id);
+    const totalAll = series.reduce((a, s) => a + s.total, 0);
+    return '<div class="card waiter-card"><h3 style="margin:0 0 2px">' + esc(r.waiter) + '</h3>' +
+      '<div class="w-total">' + fmtMoney(r.total) + '</div>' +
+      '<div class="w-sub">Semana del ' + fmtWeek(week) + ' · acumulado últimas ' + series.length + ' sem: ' + fmtMoney(totalAll) + '</div>' +
+      miniBars(series) +
+      '<div class="w-sub">Desempeño · últimas semanas con venta</div></div>';
+  }).join('');
+}
+async function submitWaiterSale(e){
   e.preventDefault();
   if (!LIVE) { $('saleMsg').className = 'form-msg err'; $('saleMsg').textContent = 'Sin conexión a Supabase: configura las variables en Vercel primero.'; return; }
   const btn = $('saleSubmit'); btn.disabled = true;
-  const p = state.productsByClave[$('fProduct').value];
-  const qty = num($('fQty').value, 1), price = num($('fPrice').value), disc = num($('fDiscount').value);
-  const courtesy = $('fCourtesy').checked;
-  const total = courtesy ? 0 : Math.max(0, qty * price - disc);
-  const row = { week_start: $('fWeek').value, shift: $('fShift').value.trim(), waiter: $('fWaiter').value.trim(),
-    product_clave: p.clave, pos_clave: null, qty: qty, unit_price: price, unit_cost: p.costo_unitario,
-    total: total, is_courtesy: courtesy, discount: disc, source: 'manual' };
+  const staffId = $('fWaiter').value;
+  const sel = $('fWaiter');
+  const name = sel.selectedOptions[0] ? sel.selectedOptions[0].textContent : '';
+  const week = $('fWeek').value;
+  const total = num($('fTotal').value);
+  if (!staffId || !week || !(total > 0)) {
+    $('saleMsg').className = 'form-msg err';
+    $('saleMsg').textContent = 'Elige un mesero, la semana y un total mayor a $0.';
+    btn.disabled = false; return;
+  }
   try {
-    await sb('weekly_sales', { method: 'POST', body: row, prefer: 'return=representation' });
+    await sb('ventas_mesero', { method: 'POST',
+      body: { week_start: week, staff_id: staffId, waiter: name, total: total },
+      prefer: 'resolution=merge-duplicates,return=representation', query: { on_conflict: 'week_start,staff_id' } });
     $('saleMsg').className = 'form-msg ok';
-    $('saleMsg').textContent = 'Guardado: ' + qty + ' × ' + p.nombre + ' (' + $('fWaiter').value.trim() + ', ' + $('fShift').value.trim() + ') · Total ' + fmtMoney(total) + '.';
-    $('fQty').value = '1'; $('fDiscount').value = '0'; $('fCourtesy').checked = false;
-    updateSalePreview();
-    await refreshManualTable();
-    if ($('fWeek').value === state.selectedWeek) { await loadWeekData(); renderAll(); }
+    $('saleMsg').textContent = 'Guardado: ' + name + ' · semana del ' + fmtWeek(week) + ' · Total ' + fmtMoney(total) + '.';
+    $('fTotal').value = '';
+    state.waiterWeek = week;
+    await refreshWaiterSales();
   } catch (err) {
     $('saleMsg').className = 'form-msg err';
-    $('saleMsg').textContent = err.status === 409 ? 'Esa venta ya existe para esta semana (duplicado).' : 'No se pudo guardar: ' + err.message + (err.data && err.data.message ? ' · ' + err.data.message : '');
+    $('saleMsg').textContent = 'No se pudo guardar: ' + err.message + (err.data && err.data.message ? ' · ' + err.data.message : '');
   } finally { btn.disabled = false; }
-}
-async function refreshManualTable(){
-  const tb = $('manualTable').querySelector('tbody');
-  if (!LIVE) { tb.innerHTML = '<tr><td colspan="8" class="muted">Sin conexión a Supabase.</td></tr>'; return; }
-  try {
-    const rows = await sb('weekly_sales', { select: '*', query: { week_start: 'eq.' + state.selectedWeek, source: 'eq.manual' }, order: 'created_at.desc', limit: 100 }) || [];
-    $('manualSub').textContent = 'Ventas registradas a mano en la semana del ' + fmtWeek(state.selectedWeek) + ' (' + rows.length + ').';
-    if (!rows.length) { tb.innerHTML = '<tr><td colspan="8" class="muted">Aún no hay capturas manuales esta semana.</td></tr>'; return; }
-    tb.innerHTML = rows.map(r => {
-      const p = state.productsByClave[r.product_clave];
-      return '<tr><td>' + esc(r.waiter || '—') + '</td><td>' + esc(r.shift || '—') + '</td><td>' + esc(p ? p.nombre : '—') + '</td>' +
-        '<td class="num">' + fmtNum(r.qty) + '</td><td class="num money">' + fmtMoney(r.unit_price) + '</td>' +
-        '<td class="num money">' + fmtMoney(r.discount) + '</td><td class="num money">' + fmtMoney(r.total) + '</td>' +
-        '<td>' + (r.is_courtesy ? '<span class="badge gold">Cortesía</span>' : '—') + '</td></tr>';
-    }).join('');
-  } catch (e) { tb.innerHTML = '<tr><td colspan="8" class="muted">No se pudieron cargar las capturas: ' + esc(e.message) + '</td></tr>'; }
 }
 function invDerived(v){
   const total = num(v.almacen) + num(v.display) + num(v.barra);
@@ -1642,6 +1772,7 @@ function renderDocs(){
       ? ' <a class="btn ghost small" href="' + esc(d.file_url) + '" target="_blank" rel="noopener">Ver</a>' +
         ' <a class="btn ghost small" href="' + esc(d.file_url) + '" download>Descargar</a>'
       : ' <span class="small muted">Sin archivo subido aún</span>') +
+    (d.id ? ' <button class="btn ghost small" type="button" data-del-doc="' + esc(d.id) + '" data-doc-path="' + esc(d.file_path || '') + '" data-doc-title="' + esc(d.title) + '">Eliminar</button>' : '') +
     '</div></div>';
   }).join('') +
   '<p class="small muted">Los documentos con archivo se abren y descargan desde Supabase Storage (bucket "documentos"). Si la subida falla con un error del bucket, corre el archivo <b>Supabase-Cantaros-Documentos-Storage.sql</b> en el SQL Editor.</p>';
@@ -1686,6 +1817,38 @@ async function uploadDoc(e){
       ? 'El bucket "documentos" aún no existe en Supabase. Corre el archivo Supabase-Cantaros-Documentos-Storage.sql en el SQL Editor y vuelve a intentar.'
       : 'No se pudo subir: ' + err.message;
   } finally { btn.disabled = false; }
+}
+
+/* ---------- eliminar documento con PIN ---------- */
+function requestDeleteDoc(id, filePath, title){
+  state.pendingDocDelete = { id: id, file_path: filePath || '', title: title || '' };
+  $('pinModalText').textContent = 'Vas a eliminar "' + (title || 'este documento') + '"' + (filePath ? ' y su archivo.' : '.') + ' Escribe el PIN para confirmar.';
+  $('pinInput').value = '';
+  $('pinMsg').textContent = ''; $('pinMsg').className = 'form-msg';
+  $('pinModal').style.display = 'flex';
+  setTimeout(() => $('pinInput').focus(), 50);
+}
+function closePinModal(){ $('pinModal').style.display = 'none'; state.pendingDocDelete = null; }
+async function confirmDeleteDoc(){
+  const pin = $('pinInput').value.trim();
+  if (pin !== '2026') { $('pinMsg').className = 'form-msg err'; $('pinMsg').textContent = 'PIN incorrecto. No se eliminó nada.'; return; }
+  const target = state.pendingDocDelete; if (!target) return;
+  $('pinConfirmBtn').disabled = true;
+  try {
+    if (target.file_path) {
+      const base = CFG.url.replace(/\/$/, '');
+      const res = await fetch(base + '/storage/v1/object/documentos/' + encodeURIComponent(target.file_path), {
+        method: 'DELETE', headers: { apikey: CFG.anonKey, Authorization: 'Bearer ' + CFG.anonKey } });
+      if (!res.ok && res.status !== 404) { const t = await res.text(); throw new Error('Storage ' + res.status + (t ? ' · ' + t.slice(0, 120) : '')); }
+    }
+    await sb('documents', { method: 'DELETE', query: { id: 'eq.' + target.id } });
+    closePinModal();
+    state.docs = await sb('documents', { select: '*', order: 'title.asc' }) || [];
+    renderDocs();
+  } catch (err) {
+    $('pinMsg').className = 'form-msg err';
+    $('pinMsg').textContent = 'No se pudo eliminar: ' + err.message;
+  } finally { $('pinConfirmBtn').disabled = false; }
 }
 
 /* ---------------- HORARIOS ---------------- */
@@ -1742,7 +1905,7 @@ async function onHorariosWeekChange(){
 }
 function renderHorarios(){
   const days = weekDays(state.horariosWeek);
-  $('horariosSub').textContent = 'Semana del ' + fmtWeek(state.horariosWeek) + ' · turnos por área. Escribe el código del turno y se guarda solo.';
+  $('horariosSub').textContent = weekRangeTitle(state.horariosWeek) + ' · toca una celda para elegir entrada y salida, cierre, OFF o falta.';
   const hwInput = $('horariosWeekInput');
   if (hwInput) hwInput.value = state.horariosWeek;
   const notice = $('horariosNotice');
@@ -1761,8 +1924,8 @@ function renderHorarios(){
   thead.innerHTML = '<tr><th style="width:36px">#</th><th>Nombre</th>' + days.map((d, i) => {
     const iso = toISODate(d);
     const evs = evByDay[iso] || [];
-    return '<th class="day-h">' + DIAS[i] + ' ' + d.getDate() + ' ' + MESES[d.getMonth()] +
-      evs.map(e => '<span class="ev">' + (e.tipo === 'reservacion' ? '📅 ' : '🎉 ') + esc(e.titulo) + '</span>').join('') + '</th>';
+    return '<th class="day-h">' + DIAS[i] +
+      evs.map(e => '<span class="ev">📅 ' + esc(e.titulo) + '</span>').join('') + '</th>';
   }).join('') + '</tr>';
   const shiftMap = {};
   state.horarios.forEach(h => { shiftMap[h.staff_id + '|' + h.dia] = h.turno || ''; });
@@ -1777,11 +1940,15 @@ function renderHorarios(){
       html += '<tr class="section-row"><td colspan="9">' + esc(area) + '</td></tr>';
       members.forEach(s => {
         n++;
-        html += '<tr><td class="staff-no">' + n + '</td><td class="name-cell">' + esc(s.nombre) + '</td>' +
+        const undo = state.undoStaff && state.undoStaff.id === s.id && state.undoStaff.kind === 'edit' && Date.now() < state.undoStaff.until;
+        html += '<tr><td class="staff-no">' + n + '</td><td class="name-cell">' + esc(s.nombre) +
+          (undo
+            ? ' <button class="mini-btn undo" type="button" data-undo-staff="' + s.id + '" title="Deshacer cambio">↩ Deshacer</button>'
+            : ' <button class="mini-btn" type="button" data-staff-action="' + s.id + '" title="Editar o eliminar">⋯</button>') + '</td>' +
           days.map(d => {
             const iso = toISODate(d);
             const v = shiftMap[s.id + '|' + iso] || '';
-            return '<td><input class="sched-input ' + shiftClass(v) + '" data-staff="' + s.id + '" data-dia="' + iso + '" value="' + esc(v) + '" list="shiftCodes" maxlength="11" autocomplete="off" spellcheck="false"></td>';
+            return '<td><button type="button" class="sched-cell-btn ' + shiftClass(v) + (v ? '' : ' cell-empty') + '" data-staff="' + s.id + '" data-dia="' + iso + '">' + (v ? esc(v) : '＋') + '</button></td>';
           }).join('') + '</tr>';
       });
     });
@@ -1791,24 +1958,25 @@ function renderHorarios(){
 }
 function renderEventList(days){
   const box = $('eventList');
-  if (!state.eventos.length) { box.innerHTML = '<div class="empty">Sin eventos ni reservaciones grandes esta semana.</div>'; return; }
+  if (!state.eventos.length) { box.innerHTML = '<div class="empty">Sin reservaciones esta semana.</div>'; return; }
   box.innerHTML = state.eventos.map(e => {
     const d = days.find(x => toISODate(x) === e.dia);
     const label = d ? DIAS[days.indexOf(d)] + ' ' + d.getDate() + ' ' + MESES[d.getMonth()] : e.dia;
-    return '<div class="event-item"><span class="badge ' + (e.tipo === 'reservacion' ? 'blue' : 'gold') + '">' + (e.tipo === 'reservacion' ? 'Reservación' : 'Evento') + '</span>' +
+    const det = [];
+    if (e.hora) det.push('🕐 ' + esc(e.hora));
+    if (e.tipo_evento) det.push(esc(e.tipo_evento));
+    if (e.personas) det.push(fmtNum(e.personas) + ' personas');
+    if (e.anticipo != null && num(e.anticipo) > 0) det.push('Anticipo ' + fmtMoney(e.anticipo));
+    return '<div class="event-item"><span class="badge blue">Reservación</span>' +
       '<div style="flex:1"><b>' + esc(e.titulo) + '</b> <span class="muted">· ' + label + '</span>' +
+      (det.length ? '<div class="small">' + det.join(' · ') + '</div>' : '') +
       (e.nota ? '<div class="small muted">' + esc(e.nota) + '</div>' : '') + '</div>' +
       '<button class="btn ghost small" type="button" data-del-event="' + e.id + '">Eliminar</button></div>';
   }).join('');
 }
-async function onShiftChange(e){
-  const input = e.target;
-  if (!input.classList || !input.classList.contains('sched-input')) return;
-  if (!LIVE) { $('schedMsg').className = 'form-msg err'; $('schedMsg').textContent = 'Sin conexión a Supabase: el turno no se guardó.'; return; }
-  const v = input.value.trim().toUpperCase();
-  input.value = v;
-  input.className = 'sched-input ' + shiftClass(v);
-  const staffId = input.getAttribute('data-staff'), dia = input.getAttribute('data-dia');
+async function saveShift(staffId, dia, v){
+  // Guarda un turno (o lo borra si v es vacío) en la semana de Horarios.
+  if (!LIVE) { $('schedMsg').className = 'form-msg err'; $('schedMsg').textContent = 'Sin conexión a Supabase: el turno no se guardó.'; return false; }
   try {
     if (!v) {
       await sb('horarios', { method: 'DELETE', query: { week_start: 'eq.' + state.horariosWeek, staff_id: 'eq.' + staffId, dia: 'eq.' + dia } });
@@ -1820,10 +1988,149 @@ async function onShiftChange(e){
     if (!v) { if (i !== -1) state.horarios.splice(i, 1); }
     else if (i !== -1) state.horarios[i].turno = v;
     else state.horarios.push({ week_start: state.horariosWeek, staff_id: staffId, dia: dia, turno: v });
+    return true;
   } catch (err) {
     $('schedMsg').className = 'form-msg err';
     $('schedMsg').textContent = 'No se pudo guardar el turno: ' + err.message + (err.data && err.data.message ? ' · ' + err.data.message : '');
-    renderHorarios();
+    return false;
+  }
+}
+/* ---------- selector de turno en formato 12h ---------- */
+function parseTimePart(s){
+  // Acepta "11", "11:00", "11 AM", "11:00 AM", "20:00", "2:00 PM".
+  const t = String(s || '').trim().toUpperCase().replace('.', '');
+  const m = t.match(/^(\d{1,2})(?::(\d{2}))?\s*(AM|PM)?$/);
+  if (!m) return null;
+  let h = parseInt(m[1], 10); const min = m[2] || '00'; let ap = m[3] || null;
+  if (!ap) { if (h > 12) { ap = 'PM'; h = h - 12; if (h === 0) h = 12; } else ap = 'AM'; }
+  if (h < 1 || h > 12) return null;
+  return { h: String(h), m: min, ap: ap };
+}
+function fmt12(h, m, ap){ return h + ':' + String(m).padStart(2, '0') + ' ' + ap; }
+function parseShift(v){
+  const t = String(v || '').trim().toUpperCase();
+  if (t === 'OFF') return { mode: 'off' };
+  if (t === 'F') return { mode: 'falta' };
+  if (!t) return { mode: 'range', inH: '11', inM: '00', inAP: 'AM', outCL: true };
+  const parts = t.split('-');
+  if (parts.length < 2) return { mode: 'range', inH: '11', inM: '00', inAP: 'AM', outCL: true };
+  const head = parts.slice(0, parts.length - 1).join('-').trim();
+  const tail = parts[parts.length - 1].trim();
+  const pin = parseTimePart(head);
+  if (!pin) return { mode: 'range', inH: '11', inM: '00', inAP: 'AM', outCL: true };
+  if (tail === 'CL') return { mode: 'range', inH: pin.h, inM: pin.m, inAP: pin.ap, outCL: true };
+  const pout = parseTimePart(tail);
+  if (!pout) return { mode: 'range', inH: pin.h, inM: pin.m, inAP: pin.ap, outCL: true };
+  return { mode: 'range', inH: pin.h, inM: pin.m, inAP: pin.ap, outH: pout.h, outM: pout.m, outAP: pout.ap, outCL: false };
+}
+function fillHourSelect(sel){ sel.innerHTML = ''; for (let h = 1; h <= 12; h++) { const o = document.createElement('option'); o.value = String(h); o.textContent = String(h); sel.appendChild(o); } }
+function syncOutCL(){
+  const cl = $('shOutCL').checked;
+  ['shOutH', 'shOutM', 'shOutAP'].forEach(id => { $(id).disabled = cl || state.shiftMode !== 'range'; });
+}
+function setShiftMode(mode){
+  state.shiftMode = mode;
+  ['shQuickOff', 'shQuickF', 'shQuickClear'].forEach(id => $(id).classList.remove('active'));
+  if (mode === 'off') $('shQuickOff').classList.add('active');
+  if (mode === 'falta') $('shQuickF').classList.add('active');
+  if (mode === 'clear') $('shQuickClear').classList.add('active');
+  const dis = mode !== 'range';
+  ['shInH', 'shInM', 'shInAP', 'shOutH', 'shOutM', 'shOutAP', 'shOutCL'].forEach(id => { $(id).disabled = dis; });
+  if (mode === 'range') syncOutCL();
+  $('shiftSaveBtn').textContent = mode === 'clear' ? 'Quitar turno' : (mode === 'off' ? 'Guardar OFF' : (mode === 'falta' ? 'Guardar falta' : 'Guardar turno'));
+}
+function openShiftModal(staffId, dia){
+  const s = state.staff.find(x => x.id === staffId);
+  const days = weekDays(state.horariosWeek);
+  const d = days.find(x => toISODate(x) === dia);
+  const label = d ? DIAS[days.indexOf(d)] + ' ' + d.getDate() + ' ' + MESES[d.getMonth()] : dia;
+  $('shiftModalTitle').textContent = 'Turno · ' + (s ? s.nombre : '');
+  $('shiftModalSub').textContent = label + ' · semana del ' + fmtWeek(state.horariosWeek);
+  const cur = (state.horarios.find(h => h.staff_id === staffId && h.dia === dia) || {}).turno || '';
+  const p = parseShift(cur);
+  fillHourSelect($('shInH')); fillHourSelect($('shOutH'));
+  $('shInH').value = p.inH || '11'; $('shInM').value = p.inM || '00'; $('shInAP').value = p.inAP || 'AM';
+  $('shOutH').value = p.outH || '5'; $('shOutM').value = p.outM || '00'; $('shOutAP').value = p.outAP || 'PM';
+  $('shOutCL').checked = !!p.outCL;
+  $('shiftMsg').textContent = ''; $('shiftMsg').className = 'form-msg';
+  state.shiftCtx = { staffId: staffId, dia: dia };
+  setShiftMode(p.mode || 'range');
+  $('shiftModal').style.display = 'flex';
+}
+function closeShiftModal(){ $('shiftModal').style.display = 'none'; state.shiftCtx = null; }
+async function saveShiftModal(){
+  const ctx = state.shiftCtx; if (!ctx) return;
+  let v = '';
+  if (state.shiftMode === 'off') v = 'OFF';
+  else if (state.shiftMode === 'falta') v = 'F';
+  else if (state.shiftMode === 'clear') v = '';
+  else {
+    const inn = fmt12($('shInH').value, $('shInM').value, $('shInAP').value);
+    v = $('shOutCL').checked ? inn + ' - CL' : inn + ' - ' + fmt12($('shOutH').value, $('shOutM').value, $('shOutAP').value);
+  }
+  const ok = await saveShift(ctx.staffId, ctx.dia, v);
+  if (ok) { closeShiftModal(); renderHorarios(); }
+}
+/* ---------- editar / eliminar personal con deshacer (10 s) ---------- */
+let undoTimer = null;
+function openStaffModal(id){
+  const s = state.staff.find(x => x.id === id); if (!s) return;
+  state.staffCtx = { id: id, prev: { nombre: s.nombre, area: s.area, activo: true } };
+  $('staffModalTitle').textContent = s.nombre;
+  $('staffModalSub').textContent = s.area + ' · los cambios se guardan en Supabase.';
+  $('staffEditBox').style.display = 'none';
+  $('stEditName').value = s.nombre; $('stEditArea').value = s.area;
+  $('staffModalMsg').textContent = ''; $('staffModalMsg').className = 'form-msg';
+  $('staffModal').style.display = 'flex';
+}
+function closeStaffModal(){ $('staffModal').style.display = 'none'; state.staffCtx = null; }
+function setUndoStaff(undo){
+  state.undoStaff = undo;
+  clearTimeout(undoTimer);
+  undoTimer = setTimeout(() => { state.undoStaff = null; hideStaffUndo(); renderHorarios(); }, 10000);
+  const bar = $('staffUndoBar');
+  $('staffUndoText').textContent = (undo.kind === 'delete' ? 'Se eliminó a ' : 'Se editó a ') + undo.prev.nombre + '.';
+  $('staffUndoCount').textContent = 'Tienes 10 segundos para deshacerlo.';
+  bar.classList.add('show');
+}
+function hideStaffUndo(){ $('staffUndoBar').classList.remove('show'); }
+async function undoStaffChange(){
+  const u = state.undoStaff; if (!u) return;
+  clearTimeout(undoTimer);
+  try {
+    await sb('staff', { method: 'PATCH', query: { id: 'eq.' + u.id }, body: { nombre: u.prev.nombre, area: u.prev.area, activo: u.prev.activo } });
+    state.undoStaff = null; hideStaffUndo();
+    await loadHorariosData(); renderHorarios();
+  } catch (err) {
+    $('schedMsg').className = 'form-msg err';
+    $('schedMsg').textContent = 'No se pudo deshacer: ' + err.message;
+  }
+}
+async function saveStaffEdit(){
+  const ctx = state.staffCtx; if (!ctx) return;
+  const nombre = $('stEditName').value.trim().toUpperCase();
+  const area = $('stEditArea').value;
+  if (!nombre) { $('staffModalMsg').className = 'form-msg err'; $('staffModalMsg').textContent = 'Escribe un nombre.'; return; }
+  try {
+    await sb('staff', { method: 'PATCH', query: { id: 'eq.' + ctx.id }, body: { nombre: nombre, area: area } });
+    closeStaffModal();
+    setUndoStaff({ id: ctx.id, prev: ctx.prev, kind: 'edit', until: Date.now() + 10000 });
+    await loadHorariosData(); renderHorarios();
+  } catch (err) {
+    $('staffModalMsg').className = 'form-msg err';
+    $('staffModalMsg').textContent = err.status === 409 ? 'Ese nombre ya existe en esa área.' : 'No se pudo guardar: ' + err.message;
+  }
+}
+async function deleteStaff(){
+  const ctx = state.staffCtx; if (!ctx) return;
+  try {
+    await sb('staff', { method: 'PATCH', query: { id: 'eq.' + ctx.id }, body: { activo: false } });
+    closeStaffModal();
+    setUndoStaff({ id: ctx.id, prev: ctx.prev, kind: 'delete', until: Date.now() + 10000 });
+    await loadHorariosData(); renderHorarios();
+  } catch (err) {
+    $('staffModalMsg').className = 'form-msg err';
+    $('staffModalMsg').textContent = 'No se pudo eliminar: ' + err.message;
   }
 }
 async function submitStaff(e){
@@ -1848,17 +2155,52 @@ async function submitEvent(e){
   if (!LIVE) { $('eventMsg').className = 'form-msg err'; $('eventMsg').textContent = 'Sin conexión a Supabase.'; return; }
   const btn = $('eventSubmit'); btn.disabled = true;
   try {
+    const titulo = $('evTitle').value.trim();
+    const horaRaw = $('evHour').value;
+    const personas = $('evPersonas').value ? parseInt($('evPersonas').value, 10) : null;
+    const anticipo = $('evAnticipo').value !== '' ? num($('evAnticipo').value) : null;
     await sb('eventos', { method: 'POST', body: { week_start: state.horariosWeek, dia: $('evDay').value,
-      titulo: $('evTitle').value.trim(), tipo: $('evType').value, nota: $('evNote').value.trim() || null },
+      titulo: titulo, tipo: 'reservacion', nota: $('evNote').value.trim() || null,
+      hora: horaRaw ? fmtHour12(horaRaw) : null, personas: personas,
+      tipo_evento: $('evTipoEvento').value, anticipo: anticipo },
       prefer: 'return=representation' });
     $('eventMsg').className = 'form-msg ok';
-    $('eventMsg').textContent = 'Evento agregado para el ' + $('evDay').selectedOptions[0].textContent + '.';
-    $('evTitle').value = ''; $('evNote').value = '';
+    $('eventMsg').textContent = 'Reservación agregada para el ' + $('evDay').selectedOptions[0].textContent + '.';
+    $('evTitle').value = ''; $('evNote').value = ''; $('evHour').value = ''; $('evPersonas').value = ''; $('evAnticipo').value = '';
     await loadHorariosData(); renderHorarios();
   } catch (err) {
     $('eventMsg').className = 'form-msg err';
     $('eventMsg').textContent = 'No se pudo agregar: ' + err.message + (err.data && err.data.message ? ' · ' + err.data.message : '');
   } finally { btn.disabled = false; }
+}
+/* Exportar las reservaciones de la semana a PDF (vista imprimible). */
+function exportReservacionesPDF(){
+  const msg = $('eventMsg');
+  const days = weekDays(state.horariosWeek);
+  const rows = state.eventos.map(e => {
+    const d = days.find(x => toISODate(x) === e.dia);
+    const label = d ? DIAS[days.indexOf(d)] + ' ' + d.getDate() + ' ' + MESES[d.getMonth()] : e.dia;
+    return '<tr><td>' + esc(label) + '</td><td>' + esc(e.hora || '—') + '</td><td><b>' + esc(e.titulo) + '</b></td>' +
+      '<td>' + esc(e.tipo_evento || '—') + '</td><td class="num">' + (e.personas ? fmtNum(e.personas) : '—') + '</td>' +
+      '<td class="num">' + (e.anticipo != null && num(e.anticipo) > 0 ? fmtMoney(e.anticipo) : '—') + '</td>' +
+      '<td>' + esc(e.nota || '') + '</td></tr>';
+  }).join('');
+  const html = '<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><title>Reservaciones · ' + weekRangeTitle(state.horariosWeek) + '</title><style>' +
+    'body{font-family:-apple-system,"Segoe UI",Roboto,Arial,sans-serif;color:#1b2530;margin:24px}' +
+    'h1{font-size:22px;margin:0 0 4px} p.sub{color:#667085;margin:0 0 18px}' +
+    'table{width:100%;border-collapse:collapse;font-size:13px} th,td{border:1px solid #cbd5d1;padding:7px 8px;text-align:left}' +
+    'th{background:#0d2e20;color:#fff} td.num{text-align:right}' +
+    '@media print{body{margin:0} @page{size:landscape}}' +
+    '</style></head><body>' +
+    '<h1>Reservaciones · ' + weekRangeTitle(state.horariosWeek) + '</h1>' +
+    '<p class="sub">Cántaros, Cazos y Cantares · Calle Sol #840 Oriente, Ciudad Juárez</p>' +
+    '<table><thead><tr><th>Día</th><th>Hora</th><th>Reservación</th><th>Tipo</th><th>Personas</th><th>Anticipo</th><th>Notas</th></tr></thead><tbody>' +
+    (rows || '<tr><td colspan="7">Sin reservaciones esta semana.</td></tr>') + '</tbody></table>' +
+    '</body></html>';
+  const win = window.open('', '_blank');
+  if (!win) { msg.className = 'form-msg err'; msg.textContent = 'El navegador bloqueó la ventana: permite las ventanas emergentes para este sitio y vuelve a intentar.'; return; }
+  win.document.write(html); win.document.close(); win.focus();
+  setTimeout(function(){ try { win.print(); } catch (e) {} }, 400);
 }
 async function deleteEvent(id){
   if (!LIVE) return;
@@ -1895,7 +2237,7 @@ function drawScheduleCanvas(){
   ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, W, H);
   ctx.textBaseline = 'middle'; ctx.textAlign = 'left';
   ctx.fillStyle = '#1b2530'; ctx.font = '800 34px ' + FONT;
-  ctx.fillText('Horarios · Semana del ' + fmtWeek(state.horariosWeek), pad + 6, 42);
+  ctx.fillText(fit(weekRangeTitle(state.horariosWeek), W - pad * 2 - 12, '800 34px ' + FONT), pad + 6, 42);
   ctx.fillStyle = '#667085'; ctx.font = '600 21px ' + FONT;
   ctx.fillText('Cántaros, Cazos y Cantares · Calle Sol #840 Oriente, Ciudad Juárez', pad + 6, 78);
   let y = titleH;
@@ -1908,11 +2250,11 @@ function drawScheduleCanvas(){
     const cx = x + dayW / 2;
     ctx.textAlign = 'center';
     ctx.font = '800 21px ' + FONT;
-    ctx.fillText(DIAS[i] + ' ' + d.getDate() + ' ' + MESES[d.getMonth()], cx, y + 22);
+    ctx.fillText(DIAS[i], cx, y + 22);
     const dayEvs = evs.filter(e => e.dia === toISODate(d));
     if (dayEvs.length) {
       ctx.fillStyle = '#e3c15e'; ctx.font = '700 16px ' + FONT;
-      ctx.fillText(fit(dayEvs.map(e => (e.tipo === 'reservacion' ? '📅 ' : '🎉 ') + e.titulo).join(' · '), dayW - 12, '700 16px ' + FONT), cx, y + 48);
+      ctx.fillText(fit(dayEvs.map(e => '📅 ' + e.titulo).join(' · '), dayW - 12, '700 16px ' + FONT), cx, y + 48);
       ctx.fillStyle = '#ffffff';
     }
     ctx.textAlign = 'left';
@@ -1961,19 +2303,24 @@ function drawScheduleCanvas(){
   y += 10;
   ctx.fillStyle = '#1b2530'; ctx.font = '800 21px ' + FONT; ctx.textAlign = 'left';
   if (evs.length) {
-    ctx.fillText('Eventos y reservaciones de la semana', pad + 6, y + 12);
+    ctx.fillText('Reservaciones de la semana', pad + 6, y + 12);
     y += 38;
     ctx.font = '600 19px ' + FONT;
     evs.forEach(e => {
       const d = days.find(x => toISODate(x) === e.dia);
       const label = d ? DIAS[days.indexOf(d)] + ' ' + d.getDate() + ' ' + MESES[d.getMonth()] : e.dia;
       ctx.fillStyle = '#667085';
-      ctx.fillText('• ' + label + ' · ' + (e.tipo === 'reservacion' ? 'Reservación' : 'Evento') + ' · ' + e.titulo + (e.nota ? ' — ' + e.nota : ''), pad + 6, y + 10);
+      const det = [];
+      if (e.hora) det.push(e.hora);
+      if (e.tipo_evento) det.push(e.tipo_evento);
+      if (e.personas) det.push(e.personas + ' pers.');
+      if (e.anticipo != null && num(e.anticipo) > 0) det.push('anticipo ' + fmtMoney(e.anticipo));
+      ctx.fillText(fit('• ' + label + ' · ' + e.titulo + (det.length ? ' · ' + det.join(' · ') : '') + (e.nota ? ' — ' + e.nota : ''), W - pad * 2 - 12, '600 19px ' + FONT), pad + 6, y + 10);
       y += 32;
     });
   }
   ctx.fillStyle = '#667085'; ctx.font = '600 17px ' + FONT;
-  ctx.fillText('Generado desde el dashboard Cántaros · OFF = descanso · F = falta · 11-CL = entrada 11:00 a cierre · 11:00-20:00 = entrada y salida', pad + 6, H - 18);
+  ctx.fillText('Generado desde el dashboard Cántaros · OFF = descanso · F = falta · 11:00 AM - CL = entrada a cierre · 2:00 PM - 5:00 PM = entrada y salida', pad + 6, H - 18);
   return canvas;
 }
 
@@ -1981,7 +2328,7 @@ function drawScheduleCanvas(){
    por WhatsApp desde el teléfono) y descargarla como PNG. */
 function showScheduleImage(){
   const canvas = drawScheduleCanvas();
-  $('imgModalTitle').textContent = 'Horarios · Semana del ' + fmtWeek(state.horariosWeek);
+  $('imgModalTitle').textContent = weekRangeTitle(state.horariosWeek);
   const dataUrl = canvas.toDataURL('image/png');
   $('imgModalImg').src = dataUrl;
   const dl = $('imgModalDownload');
@@ -1998,10 +2345,10 @@ async function exportScheduleXLSX(){
     const XLSX = await ensureXLSX();
     const days = weekDays(state.horariosWeek);
     const aoa = [
-      ['Horarios · Semana del ' + fmtWeek(state.horariosWeek)],
+      [weekRangeTitle(state.horariosWeek)],
       ['Cántaros, Cazos y Cantares · Calle Sol #840 Oriente, Ciudad Juárez'],
       [],
-      ['#', 'Nombre'].concat(days.map((d, i) => DIAS[i] + ' ' + d.getDate() + ' ' + MESES[d.getMonth()])),
+      ['#', 'Nombre'].concat(days.map((d, i) => DIAS[i])),
     ];
     const shiftMap = {};
     state.horarios.forEach(h => { shiftMap[h.staff_id + '|' + h.dia] = h.turno || ''; });
@@ -2017,11 +2364,12 @@ async function exportScheduleXLSX(){
     });
     if (state.eventos.length) {
       aoa.push([]);
-      aoa.push(['Eventos y reservaciones de la semana']);
+      aoa.push(['Reservaciones de la semana']);
+      aoa.push(['Día', 'Hora', 'Reservación', 'Tipo', 'Personas', 'Anticipo', 'Notas']);
       state.eventos.forEach(e => {
         const d = days.find(x => toISODate(x) === e.dia);
         const label = d ? DIAS[days.indexOf(d)] + ' ' + d.getDate() + ' ' + MESES[d.getMonth()] : e.dia;
-        aoa.push([label, e.tipo === 'reservacion' ? 'Reservación' : 'Evento', e.titulo, e.nota || '']);
+        aoa.push([label, e.hora || '', e.titulo, e.tipo_evento || '', e.personas || '', e.anticipo != null ? num(e.anticipo) : '', e.nota || '']);
       });
     }
     const ws = XLSX.utils.aoa_to_sheet(aoa);
@@ -2061,9 +2409,14 @@ function exportSchedulePDF(){
   const evs = state.eventos.map(e => {
     const d = days.find(x => toISODate(x) === e.dia);
     const label = d ? DIAS[days.indexOf(d)] + ' ' + d.getDate() + ' ' + MESES[d.getMonth()] : e.dia;
-    return '<li><b>' + esc(label) + '</b> · ' + (e.tipo === 'reservacion' ? 'Reservación' : 'Evento') + ' · ' + esc(e.titulo) + (e.nota ? ' — ' + esc(e.nota) : '') + '</li>';
+    const det = [];
+    if (e.hora) det.push(e.hora);
+    if (e.tipo_evento) det.push(e.tipo_evento);
+    if (e.personas) det.push(e.personas + ' pers.');
+    if (e.anticipo != null && num(e.anticipo) > 0) det.push('anticipo ' + fmtMoney(e.anticipo));
+    return '<li><b>' + esc(label) + '</b> · ' + esc(e.titulo) + (det.length ? ' · ' + det.join(' · ') : '') + (e.nota ? ' — ' + esc(e.nota) : '') + '</li>';
   }).join('');
-  const html = '<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><title>Horarios · Semana del ' + fmtWeek(state.horariosWeek) + '</title><style>' +
+  const html = '<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><title>' + weekRangeTitle(state.horariosWeek) + '</title><style>' +
     'body{font-family:-apple-system,"Segoe UI",Roboto,Arial,sans-serif;color:#1b2530;margin:24px}' +
     'h1{font-size:22px;margin:0 0 4px} p.sub{color:#667085;margin:0 0 18px}' +
     'table{width:100%;border-collapse:collapse;font-size:13px} th,td{border:1px solid #cbd5d1;padding:7px 8px;text-align:center}' +
@@ -2073,13 +2426,13 @@ function exportSchedulePDF(){
     'h2{font-size:15px;margin:22px 0 6px} li{margin:4px 0}' +
     '@media print{body{margin:0} @page{size:landscape}}' +
     '</style></head><body>' +
-    '<h1>Horarios · Semana del ' + fmtWeek(state.horariosWeek) + '</h1>' +
+    '<h1>' + weekRangeTitle(state.horariosWeek) + '</h1>' +
     '<p class="sub">Cántaros, Cazos y Cantares · Calle Sol #840 Oriente, Ciudad Juárez</p>' +
     '<table><thead><tr><th>#</th><th style="text-align:left">Nombre</th>' +
-    days.map((d, i) => '<th>' + DIAS[i] + ' ' + d.getDate() + ' ' + MESES[d.getMonth()] + '</th>').join('') + '</tr></thead><tbody>' +
+    days.map((d, i) => '<th>' + DIAS[i] + '</th>').join('') + '</tr></thead><tbody>' +
     (rowsHtml || '<tr><td colspan="9">Sin personal registrado.</td></tr>') + '</tbody></table>' +
-    (evs ? '<h2>Eventos y reservaciones de la semana</h2><ul>' + evs + '</ul>' : '') +
-    '<p class="sub" style="margin-top:18px">OFF = descanso · F = falta · 11-CL = entrada 11:00 a cierre · 11:00-20:00 = entrada y salida</p>' +
+    (evs ? '<h2>Reservaciones de la semana</h2><ul>' + evs + '</ul>' : '') +
+    '<p class="sub" style="margin-top:18px">OFF = descanso · F = falta · 11:00 AM - CL = entrada a cierre · 2:00 PM - 5:00 PM = entrada y salida</p>' +
     '</body></html>';
   const win = window.open('', '_blank');
   if (!win) {
@@ -2094,15 +2447,23 @@ function exportSchedulePDF(){
 }
 
 /* ---------------- navegación y tema ---------------- */
-function showView(name){
+function showView(name, gotoId){
   document.querySelectorAll('.view').forEach(v => v.classList.toggle('active', v.id === 'view-' + name));
   document.querySelectorAll('[data-view]').forEach(b => b.classList.toggle('active', b.getAttribute('data-view') === name));
   if (name === 'inv-barra') renderInventory('barra');
   if (name === 'inv-cocina') renderInventory('cocina');
-  if (name === 'captura') refreshManualTable();
+  if (name === 'captura') refreshWaiterSales();
   if (name === 'docs') renderDocs();
   if (name === 'horarios') renderHorarios();
-  window.scrollTo({ top: 0, behavior: 'smooth' });
+  if (gotoId) {
+    setTimeout(() => {
+      const el = $(gotoId);
+      if (!el) return;
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      el.classList.remove('hl-flash'); void el.offsetWidth; el.classList.add('hl-flash');
+      setTimeout(() => el.classList.remove('hl-flash'), 2600);
+    }, 80);
+  } else window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 function renderAll(){
   renderPanel();
@@ -2110,8 +2471,7 @@ function renderAll(){
   renderInventory('cocina');
   renderDocs();
   renderHorarios();
-  fillProductSelect();
-  refreshManualTable();
+  refreshWaiterSales();
 }
 function applyTheme(t){
   document.documentElement.setAttribute('data-theme', t);
@@ -2130,7 +2490,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   initTheme();
   const toggle = () => applyTheme(document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark');
   $('themeBtn').addEventListener('click', toggle);
-  document.querySelectorAll('[data-view]').forEach(b => b.addEventListener('click', () => showView(b.getAttribute('data-view'))));
+  document.querySelectorAll('[data-view]').forEach(b => b.addEventListener('click', () => showView(b.getAttribute('data-view'), b.getAttribute('data-goto'))));
   const monday = toISODate(mondayOf(new Date()));
   ['fWeek', 'posWeek', 'csvWeek', 'horariosWeekInput'].forEach(id => { $(id).value = monday; });
   $('weekSelect').addEventListener('change', async () => {
@@ -2148,13 +2508,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     setStatus(true, 'En vivo · Supabase');
   });
   $('refreshBtn').addEventListener('click', async () => { await loadAll(); });
-  $('fProduct').addEventListener('change', () => {
-    const p = state.productsByClave[$('fProduct').value];
-    if (p) $('fPrice').value = p.precio_pos;
-    updateSalePreview();
-  });
-  ['fQty', 'fPrice', 'fDiscount', 'fCourtesy'].forEach(id => $(id).addEventListener('input', updateSalePreview));
-  $('saleForm').addEventListener('submit', submitSale);
+  $('saleForm').addEventListener('submit', submitWaiterSale);
+  $('waiterWeek').addEventListener('change', () => { state.waiterWeek = $('waiterWeek').value; renderWaiterCards(); });
+  $('waiterSortBtn').addEventListener('click', () => { state.waiterSortDir *= -1; renderWaiterCards(); });
   $('posUploadBtn').addEventListener('click', uploadPOS);
   $('csvUploadBtn').addEventListener('click', uploadInvCSV);
   $('docForm').addEventListener('submit', uploadDoc);
@@ -2173,7 +2529,14 @@ document.addEventListener('DOMContentLoaded', async () => {
   }));
   $('barraSearch').addEventListener('input', () => renderInventory('barra'));
   $('cocinaSearch').addEventListener('input', () => renderInventory('cocina'));
-  $('schedTable').addEventListener('change', onShiftChange);
+  $('schedTable').addEventListener('click', e => {
+    const cellBtn = e.target.closest('.sched-cell-btn');
+    if (cellBtn) { openShiftModal(cellBtn.getAttribute('data-staff'), cellBtn.getAttribute('data-dia')); return; }
+    const undoBtn = e.target.closest('[data-undo-staff]');
+    if (undoBtn) { undoStaffChange(); return; }
+    const actBtn = e.target.closest('[data-staff-action]');
+    if (actBtn) openStaffModal(actBtn.getAttribute('data-staff-action'));
+  });
   $('horariosWeekInput').addEventListener('change', onHorariosWeekChange);
   $('staffForm').addEventListener('submit', submitStaff);
   $('eventForm').addEventListener('submit', submitEvent);
@@ -2187,6 +2550,36 @@ document.addEventListener('DOMContentLoaded', async () => {
   $('imgModalClose').addEventListener('click', closeScheduleImage);
   $('imgModalClose2').addEventListener('click', closeScheduleImage);
   $('imgModal').addEventListener('click', e => { if (e.target === $('imgModal')) closeScheduleImage(); });
+  // Modal de turno 12h
+  $('shOutCL').addEventListener('change', syncOutCL);
+  $('shQuickOff').addEventListener('click', () => setShiftMode('off'));
+  $('shQuickF').addEventListener('click', () => setShiftMode('falta'));
+  $('shQuickClear').addEventListener('click', () => setShiftMode('clear'));
+  ['shInH', 'shInM', 'shInAP', 'shOutH', 'shOutM', 'shOutAP'].forEach(id => $(id).addEventListener('change', () => setShiftMode('range')));
+  $('shiftSaveBtn').addEventListener('click', saveShiftModal);
+  $('shiftCancelBtn').addEventListener('click', closeShiftModal);
+  $('shiftModalClose').addEventListener('click', closeShiftModal);
+  $('shiftModal').addEventListener('click', e => { if (e.target === $('shiftModal')) closeShiftModal(); });
+  // Modal de personal
+  $('staffEditBtn').addEventListener('click', () => { $('staffEditBox').style.display = 'block'; });
+  $('staffEditSaveBtn').addEventListener('click', saveStaffEdit);
+  $('staffDeleteBtn').addEventListener('click', deleteStaff);
+  $('staffCancelBtn').addEventListener('click', closeStaffModal);
+  $('staffModalClose').addEventListener('click', closeStaffModal);
+  $('staffModal').addEventListener('click', e => { if (e.target === $('staffModal')) closeStaffModal(); });
+  $('staffUndoBtn').addEventListener('click', undoStaffChange);
+  // Reservaciones: exportar PDF
+  $('exportResPdfBtn').addEventListener('click', exportReservacionesPDF);
+  // Documentos: eliminar con PIN
+  $('docsList').addEventListener('click', e => {
+    const btn = e.target.closest('[data-del-doc]');
+    if (btn) requestDeleteDoc(btn.getAttribute('data-del-doc'), btn.getAttribute('data-doc-path'), btn.getAttribute('data-doc-title'));
+  });
+  $('pinConfirmBtn').addEventListener('click', confirmDeleteDoc);
+  $('pinCancelBtn').addEventListener('click', closePinModal);
+  $('pinModalClose').addEventListener('click', closePinModal);
+  $('pinModal').addEventListener('click', e => { if (e.target === $('pinModal')) closePinModal(); });
+  $('pinInput').addEventListener('keydown', e => { if (e.key === 'Enter') confirmDeleteDoc(); });
   await loadConfig();
   await loadAll();
   if (!LIVE) { renderDocs(); renderHorarios(); } // sin conexión: al menos mostrar los documentos conocidos y el aviso de horarios
