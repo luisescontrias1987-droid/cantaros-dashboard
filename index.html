@@ -7,14 +7,17 @@
 <meta name="description" content="Panel de ventas, costos, inventario y documentos de Cántaros, Cazos y Cantares. Datos en vivo desde Supabase.">
 <style>
 :root{
-  --bg:#f2f5f3; --surface:#ffffff; --surface-2:#f7faf8; --text:#1b2530; --muted:#667085;
-  --border:#e4e9e6; --shadow:0 1px 2px rgba(16,24,40,.06),0 4px 16px rgba(16,24,40,.06);
-  --accent:#1e7a4c; --accent-soft:#e5f3ec; --accent-text:#14603b;
-  --gold:#b98a1d; --gold-soft:#fbf3dd; --danger:#c0392b; --danger-soft:#fdecea;
-  --warn:#9a6b0f; --warn-soft:#fdf3dc; --info:#175cd3; --info-soft:#eaf1fe;
-  --sidebar-bg:rgba(13,46,32,.82); --sidebar-border:rgba(255,255,255,.16);
-  --sidebar-text:#eef5f0; --sidebar-muted:#b7cdc0;
-  --radius:16px; --radius-sm:10px; --topbar-h:60px;
+  --bg:linear-gradient(135deg,#f6e8d4 0%,#efdfc7 35%,#e7d4b8 65%,#f3e9d8 100%);
+  --surface:rgba(255,255,255,.62); --surface-2:rgba(255,255,255,.45);
+  --text:#111827; --muted:#6b7280;
+  --border:rgba(146,110,70,.30); --shadow:0 1px 2px rgba(93,64,28,.05),0 8px 24px rgba(93,64,28,.10);
+  --accent:#f97316; --accent-soft:#ffedd5; --accent-text:#c2410c;
+  --positive:#10b981; --positive-soft:#d1fae5; --positive-text:#047857;
+  --gold:#d97706; --gold-soft:#fef3c7; --danger:#ef4444; --danger-soft:#fee2e2;
+  --warn:#b45309; --warn-soft:#ffedd5; --info:#2563eb; --info-soft:#dbeafe;
+  --sidebar-bg:rgba(255,255,255,.45); --sidebar-border:rgba(255,255,255,.7);
+  --sidebar-text:#1f2937; --sidebar-muted:#6b7280;
+  --radius:22px; --radius-sm:14px; --topbar-h:60px;
 }
 html[data-theme="dark"]{
   --bg:#0e1412; --surface:#171f1c; --surface-2:#1d2823; --text:#e9efec; --muted:#9db0a6;
@@ -24,6 +27,7 @@ html[data-theme="dark"]{
   --warn:#e0aa3e; --warn-soft:#3a2f10; --info:#7aa7f5; --info-soft:#1a2c4d;
   --sidebar-bg:rgba(10,26,19,.85); --sidebar-border:rgba(255,255,255,.12);
   --sidebar-text:#e8f2ec; --sidebar-muted:#a9bfb2;
+  --radius:16px; --radius-sm:10px;
 }
 *{box-sizing:border-box}
 html{scroll-behavior:smooth}
@@ -239,6 +243,48 @@ html[data-theme="dark"] .sched-input.cell-f{background:#3d1d1a;color:#f0857a;bor
 @media (prefers-reduced-motion:reduce){
   *{animation:none!important;transition:none!important;scroll-behavior:auto!important}
 }
+
+/* ---------- Glassy Dashboard V2 — tema claro (solo visual) ---------- */
+html[data-theme="light"] body{background:linear-gradient(135deg,#f6e8d4 0%,#efdfc7 35%,#e7d4b8 65%,#f3e9d8 100%)}
+html[data-theme="light"] body::before{content:"";position:fixed;inset:0;z-index:-1;
+  background:url("https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=1920&q=60") center/cover no-repeat;
+  filter:blur(20px) saturate(1.15) brightness(1.06);transform:scale(1.15)}
+html[data-theme="light"] body::after{content:"";position:fixed;inset:0;z-index:-1;
+  background:linear-gradient(180deg,rgba(250,241,226,.55) 0%,rgba(246,233,214,.68) 100%)}
+html[data-theme="light"] .card,html[data-theme="light"] .kpi{
+  backdrop-filter:blur(18px) saturate(1.4);-webkit-backdrop-filter:blur(18px) saturate(1.4)}
+html[data-theme="light"] .card{transition:transform .18s ease,box-shadow .18s ease}
+html[data-theme="light"] .card:hover{transform:translateY(-2px);
+  box-shadow:0 16px 36px rgba(93,64,28,.16),0 2px 8px rgba(93,64,28,.08)}
+html[data-theme="light"] .kpi:hover{box-shadow:0 16px 36px rgba(93,64,28,.16),0 2px 8px rgba(93,64,28,.08)}
+@media (min-width:861px){html[data-theme="light"] .kpi .k-value{font-size:30px}}
+html[data-theme="light"] .page-head h2{font-weight:800;letter-spacing:-.01em}
+html[data-theme="light"] .card h3{font-weight:800}
+html[data-theme="light"] .btn{background:#111827;color:#fff}
+html[data-theme="light"] .btn:hover{box-shadow:0 6px 16px rgba(17,24,39,.35)}
+html[data-theme="light"] .btn.ghost{background:var(--surface);color:var(--text)}
+html[data-theme="light"] .btn.danger{background:var(--danger)}
+html[data-theme="light"] .bar-fill,html[data-theme="light"] .trend-bar{background:linear-gradient(90deg,#f97316,#fdba74)}
+html[data-theme="light"] .bar-fill.gold{background:linear-gradient(90deg,#d97706,#fbbf24)}
+html[data-theme="light"] .delta.up{color:var(--positive-text)}
+html[data-theme="light"] .badge.green{background:var(--positive-soft);color:var(--positive-text)}
+html[data-theme="light"] .form-msg.ok{color:var(--positive-text)}
+html[data-theme="light"] .doc-ic{background:var(--positive-soft);color:var(--positive-text)}
+html[data-theme="light"] .mobilenav button.active{color:var(--accent-text);background:var(--accent-soft)}
+html[data-theme="light"] .sidebar{box-shadow:0 12px 40px rgba(93,64,28,.18),inset 0 1px 0 rgba(255,255,255,.8)}
+html[data-theme="light"] .brand-badge{background:linear-gradient(135deg,#fb923c,#f97316);color:#fff;
+  border-color:rgba(255,255,255,.5);box-shadow:inset 0 1px 0 rgba(255,255,255,.5),0 4px 14px rgba(249,115,22,.35)}
+html[data-theme="light"] .nav-btn:hover{background:rgba(17,24,39,.06);border-color:rgba(17,24,39,.10);transform:translateX(2px)}
+html[data-theme="light"] .nav-btn.active{background:rgba(249,115,22,.14);border-color:rgba(249,115,22,.35);
+  box-shadow:0 4px 18px rgba(249,115,22,.18),inset 0 1px 0 rgba(255,255,255,.6)}
+html[data-theme="light"] .theme-btn{border-color:rgba(17,24,39,.14);background:rgba(255,255,255,.55);color:var(--sidebar-text)}
+html[data-theme="light"] .theme-btn:hover{background:rgba(255,255,255,.8)}
+html[data-theme="light"] .side-week select{background:rgba(255,255,255,.6);color:var(--sidebar-text);border-color:rgba(17,24,39,.14)}
+html[data-theme="light"] input,html[data-theme="light"] select,html[data-theme="light"] textarea{
+  backdrop-filter:blur(12px) saturate(1.3);-webkit-backdrop-filter:blur(12px) saturate(1.3)}
+html[data-theme="light"] th{backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}
+html[data-theme="light"] .modal{backdrop-filter:blur(24px) saturate(1.4);-webkit-backdrop-filter:blur(24px) saturate(1.4)}
+html[data-theme="light"] .mobilenav{backdrop-filter:blur(18px) saturate(1.4);-webkit-backdrop-filter:blur(18px) saturate(1.4)}
 </style>
 </head>
 <body>
