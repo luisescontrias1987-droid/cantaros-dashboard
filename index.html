@@ -178,6 +178,27 @@ tr.section-row td{font-weight:800;background:var(--surface-2);text-transform:upp
   background:var(--accent-soft);color:var(--accent-text)}
 .doc-card h3{font-size:15.5px}
 
+/* ---------- horarios ---------- */
+.sched-table{min-width:880px}
+.sched-table th.day-h{white-space:normal;vertical-align:top;text-align:center;min-width:96px}
+.sched-table th.day-h .ev{display:block;font-size:10.5px;font-weight:700;letter-spacing:0;text-transform:none;
+  color:var(--gold);margin-top:4px;line-height:1.3}
+.sched-table td.name-cell{font-weight:600;white-space:normal;min-width:150px}
+.sched-table td.staff-no{color:var(--muted);text-align:right;width:36px}
+.sched-input{width:100%;min-width:66px;text-align:center;text-transform:uppercase;font-weight:700;
+  padding:6px 4px;border-radius:8px;border:1px solid var(--border);background:var(--surface)}
+.sched-input.cell-off{background:#dbeafe;color:#175cd3;border-color:#bfd3f7}
+.sched-input.cell-f{background:#fdecea;color:#c0392b;border-color:#f5c1bb}
+.sched-input.cell-work{background:var(--surface-2)}
+html[data-theme="dark"] .sched-input.cell-off{background:#1a2c4d;color:#7aa7f5;border-color:#2c4a7a}
+html[data-theme="dark"] .sched-input.cell-f{background:#3d1d1a;color:#f0857a;border-color:#6b2a25}
+.legend-codes{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+.week-picker{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:12px}
+.week-picker label{font-weight:700;font-size:13px}
+.week-picker input[type="date"]{max-width:180px}
+.event-item{display:flex;gap:10px;align-items:flex-start;padding:9px 0;border-bottom:1px solid var(--border)}
+.event-item:last-child{border-bottom:none}
+
 /* ---------- mobile ---------- */
 .mobilenav{display:none}
 @media (max-width:1100px){.kpis{grid-template-columns:repeat(2,1fr)}.grid2{grid-template-columns:1fr}.form-grid{grid-template-columns:repeat(2,1fr)}}
@@ -225,6 +246,7 @@ tr.section-row td{font-weight:800;background:var(--surface-2);text-transform:upp
       <div class="nav-label">Operación</div>
       <button class="nav-btn active" data-view="panel"><span class="ic">📊</span>Panel ejecutivo</button>
       <button class="nav-btn" data-view="captura"><span class="ic">📝</span>Captura semanal</button>
+      <button class="nav-btn" data-view="horarios"><span class="ic">🗓️</span>Horarios</button>
       <div class="nav-label">Inventario</div>
       <button class="nav-btn" data-view="inv-barra"><span class="ic">🍺</span>Inventario de barra</button>
       <button class="nav-btn" data-view="inv-cocina"><span class="ic">🥬</span>Inventario de cocina</button>
@@ -419,6 +441,76 @@ tr.section-row td{font-weight:800;background:var(--surface-2);text-transform:upp
       </div>
     </section>
 
+    <!-- ===== HORARIOS ===== -->
+    <section class="view" id="view-horarios">
+      <div class="page-head">
+        <div>
+          <h2>Horarios del staff</h2>
+          <p id="horariosSub">Semana del … · turnos por área. Escribe el código del turno y se guarda solo.</p>
+        </div>
+        <button class="btn ghost small" id="exportSchedBtn" type="button">⬇ Exportar imagen (PNG)</button>
+      </div>
+      <div id="horariosNotice"></div>
+      <div class="legend-codes">
+        <span class="badge blue">OFF · descanso</span>
+        <span class="badge red">F · falta / inasistencia</span>
+        <span class="badge green">11-CL · entrada 11:00 a cierre (regularmente 12:00am)</span>
+        <span class="badge grey">Vacío · sin turno</span>
+      </div>
+      <div class="week-picker">
+        <label for="horariosWeekInput">Semana</label>
+        <input type="date" id="horariosWeekInput">
+        <span class="small muted">Elige cualquier día: se toma el lunes de esa semana. Esta semana es independiente del selector general, así puedes armar horarios de semanas nuevas sin ventas aún.</span>
+      </div>
+      <div class="card">
+        <div class="table-wrap"><table class="sched-table" id="schedTable">
+          <thead></thead>
+          <tbody></tbody>
+        </table></div>
+        <div class="form-msg" id="schedMsg"></div>
+        <p class="small muted" style="margin:12px 0 0">Códigos: 11-CL, 10-CL, 12-CL, 2-CL, 3-CL, 4-CL, 5-CL, 6-CL, OFF, F. Si una semana no tiene turnos guardados, las celdas quedan vacías: nunca se copia otra semana.</p>
+      </div>
+      <div class="grid2">
+        <div class="card">
+          <h3>Agregar personal</h3>
+          <p class="card-sub">El nombre aparece en la tabla de horarios de la semana.</p>
+          <form id="staffForm">
+            <div class="form-grid" style="grid-template-columns:1fr 1fr">
+              <div><label for="stName">Nombre</label><input type="text" id="stName" placeholder="Nombre y apellido" required></div>
+              <div><label for="stArea">Área</label><select id="stArea"><option>COCINA</option><option>BARRA</option><option>AYUDANTE</option><option>MESEROS</option><option>HOSTESS</option><option>CAJA</option></select></div>
+            </div>
+            <div style="margin-top:12px"><button class="btn" type="submit" id="staffSubmit">Agregar</button></div>
+            <div class="form-msg" id="staffMsg"></div>
+          </form>
+        </div>
+        <div class="card">
+          <h3>Eventos y reservaciones de la semana</h3>
+          <p class="card-sub">Eventos especiales o reservaciones grandes: aparecen en la columna de su día y en la lista de abajo.</p>
+          <form id="eventForm">
+            <div class="form-grid" style="grid-template-columns:1fr 1fr">
+              <div><label for="evDay">Día</label><select id="evDay" required></select></div>
+              <div><label for="evType">Tipo</label><select id="evType"><option value="evento">Evento especial</option><option value="reservacion">Reservación grande</option></select></div>
+              <div class="full"><label for="evTitle">Título</label><input type="text" id="evTitle" placeholder="Ej. Posada empresa X / 40 personas" required></div>
+              <div class="full"><label for="evNote">Nota (opcional)</label><input type="text" id="evNote" placeholder="Ej. Llegan 7pm, menú especial"></div>
+            </div>
+            <div style="margin-top:12px"><button class="btn" type="submit" id="eventSubmit">Agregar evento</button></div>
+            <div class="form-msg" id="eventMsg"></div>
+          </form>
+        </div>
+      </div>
+      <div class="card">
+        <h3>Eventos de esta semana</h3>
+        <div id="eventList"></div>
+      </div>
+      <datalist id="shiftCodes">
+        <option value="11-CL"></option><option value="10-CL"></option><option value="12-CL"></option>
+        <option value="2-CL"></option><option value="3-CL"></option><option value="4-CL"></option>
+        <option value="5-CL"></option><option value="6-CL"></option><option value="OFF"></option>
+        <option value="F"></option>
+      </datalist>
+      <canvas id="schedCanvas" style="display:none"></canvas>
+    </section>
+
     <!-- ===== INVENTARIO BARRA ===== -->
     <section class="view" id="view-inv-barra">
       <div class="page-head">
@@ -454,7 +546,7 @@ tr.section-row td{font-weight:800;background:var(--surface-2);text-transform:upp
       </div>
       <div class="kpis" id="cocinaKpis">
         <div class="kpi"><div class="k-label">Valor total</div><div class="k-value money" id="cValor">—</div><div class="k-sub" id="cValorSub">85 productos en plantilla</div></div>
-        <div class="kpi danger"><div class="k-label">Perdido ($)</div><div class="k-value money" id="cPerdido">—</div><div class="k-sub" id="cPerdidoSub">Sin conteos aún</div></div>
+        <div class="kpi danger"><div class="k-label">Perdido ($)</div><div class="k-value money" id="cPerdido">—</div><div class="k-sub">Sin conteos aún</div></div>
         <div class="kpi gold"><div class="k-label">Sobrante ($)</div><div class="k-value money" id="cSobrante">—</div><div class="k-sub">Sin conteos aún</div></div>
       </div>
       <div class="card">
@@ -498,6 +590,13 @@ tr.section-row td{font-weight:800;background:var(--surface-2);text-transform:upp
           <li>Se capturan aquí mismo, en <b>Captura semanal → Venta por mesero</b>. El reporte del POS no trae mesero, turno ni folio, así que esta captura es la única fuente de esas dimensiones.</li>
           <li>Las cortesías se marcan con la casilla y se guardan en $0; los descuentos se anotan en pesos en el mismo renglón.</li>
         </ol>
+        <h3 style="font-size:15px;margin-top:18px">📅 Horarios del staff</h3>
+        <ol class="steps">
+          <li>Antes de usar la vista <b>Horarios</b> por primera vez, corre el archivo <code class="inline">Supabase-Cantaros-Horarios.sql</code> en Supabase → SQL Editor (crea las tablas <code class="inline">staff</code>, <code class="inline">horarios</code> y <code class="inline">eventos</code> y siembra los 18 nombres del personal).</li>
+          <li>Después expón las tres tablas en Supabase → <b>Integrations → Data API</b> (o activa "Default privileges for new entities") para que la app las pueda leer y escribir.</li>
+          <li>Los turnos se escriben directo en la tabla (códigos: 11-CL, 10-CL, 12-CL, 2-CL, 3-CL, 4-CL, 5-CL, 6-CL, OFF, F) y se guardan solos al cambiar de celda. Si una semana no tiene turnos, las celdas quedan vacías: nunca se copia otra semana.</li>
+          <li>Los eventos especiales y reservaciones grandes se agregan en la misma vista y aparecen en la columna de su día. El botón <b>Exportar imagen (PNG)</b> descarga la tabla de la semana lista para compartir por WhatsApp.</li>
+        </ol>
       </div>
     </section>
   </main>
@@ -506,6 +605,7 @@ tr.section-row td{font-weight:800;background:var(--surface-2);text-transform:upp
   <nav class="mobilenav" id="navMobile">
     <button class="active" data-view="panel"><span class="ic">📊</span>Panel</button>
     <button data-view="captura"><span class="ic">📝</span>Captura</button>
+    <button data-view="horarios"><span class="ic">🗓️</span>Horarios</button>
     <button data-view="inv-barra"><span class="ic">🍺</span>Barra</button>
     <button data-view="inv-cocina"><span class="ic">🥬</span>Cocina</button>
     <button data-view="docs"><span class="ic">📚</span>Docs</button>
@@ -538,6 +638,7 @@ let LIVE_ERROR = null;
 const state = {
   weeks: [],            // filas de ventas_semanales, desc por week_start
   selectedWeek: FALLBACK_WEEK,
+  horariosWeek: toISODate(mondayOf(new Date())), // semana propia de Horarios (independiente del selector general)
   products: [],
   productsByClave: {},
   salesRows: [],        // weekly_sales de la semana seleccionada
@@ -546,6 +647,8 @@ const state = {
   invBarra: [], invCocina: [],
   invWeekBarra: FALLBACK_INV_WEEK, invWeekCocina: FALLBACK_INV_WEEK,
   docs: [],
+  staff: [], horarios: [], eventos: [],
+  horariosReady: false,
   loaded: false,
 };
 
@@ -686,6 +789,7 @@ async function loadWeekData(){
   state.invWeekCocina = invWC;
   try { state.invCocina = await sb('inventory_cocina', { select: '*', query: { week_start: 'eq.' + invWC }, order: 'producto.asc', limit: 1000 }) || []; }
   catch (e) { state.invCocina = []; }
+  await loadHorariosData();
 }
 function pickInvWeek(area){
   const rows = state.invResumen.filter(r => r.area === area);
@@ -1180,6 +1284,301 @@ function renderDocs(){
   '<p class="small muted">Los archivos (PDF / DOCX) se guardan en el repositorio de la empresa; esta lista muestra su título y su nota desde Supabase. Para agregar otro documento, insértalo en la tabla <b>documents</b> de Supabase.</p>';
 }
 
+/* ---------------- HORARIOS ---------------- */
+// Áreas en el orden del formato de horarios del restaurante.
+const AREAS = ['COCINA', 'BARRA', 'AYUDANTE', 'MESEROS', 'HOSTESS', 'CAJA'];
+const DIAS = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
+const SHIFT_CODES = ['11-CL', '10-CL', '12-CL', '2-CL', '3-CL', '4-CL', '5-CL', '6-CL', 'OFF', 'F'];
+// 11-CL = entrada 11:00 a cierre (CL = cierre, regularmente 12:00am, varía
+// según el flujo de comensales y los eventos). OFF = descanso. F = falta.
+function weekDays(iso){
+  const p = String(iso).split('-').map(Number);
+  const base = new Date(p[0], p[1] - 1, p[2]);
+  const out = [];
+  for (let i = 0; i < 7; i++) { const d = new Date(base); d.setDate(base.getDate() + i); out.push(d); }
+  return out;
+}
+async function loadHorariosData(){
+  if (!LIVE) { state.horariosReady = false; return; }
+  try {
+    const results = await Promise.all([
+      sb('staff', { select: '*', query: { activo: 'eq.true' }, order: 'nombre.asc', limit: 500 }),
+      sb('horarios', { select: '*', query: { week_start: 'eq.' + state.horariosWeek }, limit: 1000 }),
+      sb('eventos', { select: '*', query: { week_start: 'eq.' + state.horariosWeek }, order: 'dia.asc', limit: 200 }),
+    ]);
+    state.staff = results[0] || [];
+    state.horarios = results[1] || [];
+    state.eventos = results[2] || [];
+    state.horariosReady = true;
+  } catch (e) {
+    // Las tablas de horarios aún no existen en Supabase (falta correr el
+    // SQL): la vista muestra el aviso y deja las celdas vacías.
+    state.staff = []; state.horarios = []; state.eventos = [];
+    state.horariosReady = false;
+  }
+}
+function shiftClass(v){
+  const t = String(v || '').trim().toUpperCase();
+  if (t === 'OFF') return 'cell-off';
+  if (t === 'F') return 'cell-f';
+  if (t) return 'cell-work';
+  return '';
+}
+/* La semana de Horarios es independiente del selector general: el usuario
+   elige cualquier día y se ajusta al lunes de esa semana. */
+async function onHorariosWeekChange(){
+  const input = $('horariosWeekInput');
+  if (!input || !input.value) return;
+  const p = input.value.split('-').map(Number);
+  const monday = toISODate(mondayOf(new Date(p[0], p[1] - 1, p[2])));
+  state.horariosWeek = monday;
+  input.value = monday; // muestra el lunes al que se ajustó la fecha elegida
+  await loadHorariosData();
+  renderHorarios();
+}
+function renderHorarios(){
+  const days = weekDays(state.horariosWeek);
+  $('horariosSub').textContent = 'Semana del ' + fmtWeek(state.horariosWeek) + ' · turnos por área. Escribe el código del turno y se guarda solo.';
+  const hwInput = $('horariosWeekInput');
+  if (hwInput) hwInput.value = state.horariosWeek;
+  const notice = $('horariosNotice');
+  if (!LIVE) {
+    notice.innerHTML = '<div class="notice err">Sin conexión a Supabase: los horarios no se pueden cargar ni guardar. Configura las variables en Vercel primero.</div>';
+  } else if (!state.horariosReady) {
+    notice.innerHTML = '<div class="notice warn">Las tablas de horarios aún no existen en Supabase. Corre el archivo <b>Supabase-Cantaros-Horarios.sql</b> en el SQL Editor y expón las tablas <b>staff</b>, <b>horarios</b> y <b>eventos</b> en Supabase → Integrations → Data API.</div>';
+  } else notice.innerHTML = '';
+  const sm = $('schedMsg'); if (sm) { sm.textContent = ''; sm.className = 'form-msg'; }
+  // Selector de día del formulario de eventos (los 7 días de la semana).
+  $('evDay').innerHTML = days.map((d, i) => '<option value="' + toISODate(d) + '">' + DIAS[i] + ' ' + d.getDate() + ' ' + MESES[d.getMonth()] + '</option>').join('');
+  const evByDay = {};
+  state.eventos.forEach(e => { (evByDay[e.dia] = evByDay[e.dia] || []).push(e); });
+  // Encabezado: día + eventos de ese día como banner.
+  const thead = $('schedTable').querySelector('thead');
+  thead.innerHTML = '<tr><th style="width:36px">#</th><th>Nombre</th>' + days.map((d, i) => {
+    const iso = toISODate(d);
+    const evs = evByDay[iso] || [];
+    return '<th class="day-h">' + DIAS[i] + ' ' + d.getDate() + ' ' + MESES[d.getMonth()] +
+      evs.map(e => '<span class="ev">' + (e.tipo === 'reservacion' ? '📅 ' : '🎉 ') + esc(e.titulo) + '</span>').join('') + '</th>';
+  }).join('') + '</tr>';
+  const shiftMap = {};
+  state.horarios.forEach(h => { shiftMap[h.staff_id + '|' + h.dia] = h.turno || ''; });
+  const tbody = $('schedTable').querySelector('tbody');
+  if (!state.staff.length) {
+    tbody.innerHTML = '<tr><td colspan="9"><div class="empty">Aún no hay personal registrado.<br>Corre el SQL de horarios en Supabase (trae los 18 nombres) o agrégalos en el formulario de abajo.</div></td></tr>';
+  } else {
+    let html = '', n = 0;
+    AREAS.forEach(area => {
+      const members = state.staff.filter(s => s.area === area);
+      if (!members.length) return;
+      html += '<tr class="section-row"><td colspan="9">' + esc(area) + '</td></tr>';
+      members.forEach(s => {
+        n++;
+        html += '<tr><td class="staff-no">' + n + '</td><td class="name-cell">' + esc(s.nombre) + '</td>' +
+          days.map(d => {
+            const iso = toISODate(d);
+            const v = shiftMap[s.id + '|' + iso] || '';
+            return '<td><input class="sched-input ' + shiftClass(v) + '" data-staff="' + s.id + '" data-dia="' + iso + '" value="' + esc(v) + '" list="shiftCodes" maxlength="6" autocomplete="off" spellcheck="false"></td>';
+          }).join('') + '</tr>';
+      });
+    });
+    tbody.innerHTML = html;
+  }
+  renderEventList(days);
+}
+function renderEventList(days){
+  const box = $('eventList');
+  if (!state.eventos.length) { box.innerHTML = '<div class="empty">Sin eventos ni reservaciones grandes esta semana.</div>'; return; }
+  box.innerHTML = state.eventos.map(e => {
+    const d = days.find(x => toISODate(x) === e.dia);
+    const label = d ? DIAS[days.indexOf(d)] + ' ' + d.getDate() + ' ' + MESES[d.getMonth()] : e.dia;
+    return '<div class="event-item"><span class="badge ' + (e.tipo === 'reservacion' ? 'blue' : 'gold') + '">' + (e.tipo === 'reservacion' ? 'Reservación' : 'Evento') + '</span>' +
+      '<div style="flex:1"><b>' + esc(e.titulo) + '</b> <span class="muted">· ' + label + '</span>' +
+      (e.nota ? '<div class="small muted">' + esc(e.nota) + '</div>' : '') + '</div>' +
+      '<button class="btn ghost small" type="button" data-del-event="' + e.id + '">Eliminar</button></div>';
+  }).join('');
+}
+async function onShiftChange(e){
+  const input = e.target;
+  if (!input.classList || !input.classList.contains('sched-input')) return;
+  if (!LIVE) { $('schedMsg').className = 'form-msg err'; $('schedMsg').textContent = 'Sin conexión a Supabase: el turno no se guardó.'; return; }
+  const v = input.value.trim().toUpperCase();
+  input.value = v;
+  input.className = 'sched-input ' + shiftClass(v);
+  const staffId = input.getAttribute('data-staff'), dia = input.getAttribute('data-dia');
+  try {
+    if (!v) {
+      await sb('horarios', { method: 'DELETE', query: { week_start: 'eq.' + state.horariosWeek, staff_id: 'eq.' + staffId, dia: 'eq.' + dia } });
+    } else {
+      await sb('horarios', { method: 'POST', body: { week_start: state.horariosWeek, staff_id: staffId, dia: dia, turno: v },
+        prefer: 'resolution=merge-duplicates,return=representation', query: { on_conflict: 'week_start,staff_id,dia' } });
+    }
+    const i = state.horarios.findIndex(h => h.staff_id === staffId && h.dia === dia);
+    if (!v) { if (i !== -1) state.horarios.splice(i, 1); }
+    else if (i !== -1) state.horarios[i].turno = v;
+    else state.horarios.push({ week_start: state.horariosWeek, staff_id: staffId, dia: dia, turno: v });
+  } catch (err) {
+    $('schedMsg').className = 'form-msg err';
+    $('schedMsg').textContent = 'No se pudo guardar el turno: ' + err.message + (err.data && err.data.message ? ' · ' + err.data.message : '');
+    renderHorarios();
+  }
+}
+async function submitStaff(e){
+  e.preventDefault();
+  if (!LIVE) { $('staffMsg').className = 'form-msg err'; $('staffMsg').textContent = 'Sin conexión a Supabase.'; return; }
+  const btn = $('staffSubmit'); btn.disabled = true;
+  const nombre = $('stName').value.trim().toUpperCase();
+  const area = $('stArea').value;
+  try {
+    await sb('staff', { method: 'POST', body: { nombre: nombre, area: area, activo: true }, prefer: 'return=representation' });
+    $('staffMsg').className = 'form-msg ok';
+    $('staffMsg').textContent = 'Agregado: ' + nombre + ' (' + area + ').';
+    $('stName').value = '';
+    await loadHorariosData(); renderHorarios();
+  } catch (err) {
+    $('staffMsg').className = 'form-msg err';
+    $('staffMsg').textContent = err.status === 409 ? 'Esa persona ya existe en esa área.' : 'No se pudo agregar: ' + err.message + (err.data && err.data.message ? ' · ' + err.data.message : '');
+  } finally { btn.disabled = false; }
+}
+async function submitEvent(e){
+  e.preventDefault();
+  if (!LIVE) { $('eventMsg').className = 'form-msg err'; $('eventMsg').textContent = 'Sin conexión a Supabase.'; return; }
+  const btn = $('eventSubmit'); btn.disabled = true;
+  try {
+    await sb('eventos', { method: 'POST', body: { week_start: state.horariosWeek, dia: $('evDay').value,
+      titulo: $('evTitle').value.trim(), tipo: $('evType').value, nota: $('evNote').value.trim() || null },
+      prefer: 'return=representation' });
+    $('eventMsg').className = 'form-msg ok';
+    $('eventMsg').textContent = 'Evento agregado para el ' + $('evDay').selectedOptions[0].textContent + '.';
+    $('evTitle').value = ''; $('evNote').value = '';
+    await loadHorariosData(); renderHorarios();
+  } catch (err) {
+    $('eventMsg').className = 'form-msg err';
+    $('eventMsg').textContent = 'No se pudo agregar: ' + err.message + (err.data && err.data.message ? ' · ' + err.data.message : '');
+  } finally { btn.disabled = false; }
+}
+async function deleteEvent(id){
+  if (!LIVE) return;
+  try {
+    await sb('eventos', { method: 'DELETE', query: { id: 'eq.' + id } });
+    await loadHorariosData(); renderHorarios();
+  } catch (err) {
+    $('eventMsg').className = 'form-msg err';
+    $('eventMsg').textContent = 'No se pudo eliminar: ' + err.message;
+  }
+}
+/* Exportar la tabla de la semana como PNG (canvas, sin librerías). */
+function exportSchedulePNG(){
+  const canvas = $('schedCanvas');
+  const ctx = canvas.getContext('2d');
+  const days = weekDays(state.horariosWeek);
+  const W = 1080, pad = 14;
+  const noW = 46, nameW = 252;
+  const dayW = (W - pad * 2 - noW - nameW) / 7;
+  const titleH = 100, headH = 66, areaH = 40, rowH = 50;
+  const areaCount = AREAS.filter(a => state.staff.some(s => s.area === a)).length;
+  const evs = state.eventos.slice();
+  const footH = evs.length ? 40 + evs.length * 32 + 26 : 40;
+  const H = titleH + headH + areaCount * areaH + state.staff.length * rowH + footH + (state.staff.length ? 0 : 60);
+  canvas.width = W; canvas.height = H;
+  const FONT = '-apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif';
+  function fit(text, maxW, font){
+    ctx.font = font;
+    let t = String(text == null ? '' : text);
+    if (ctx.measureText(t).width <= maxW) return t;
+    while (t.length > 1 && ctx.measureText(t + '…').width > maxW) t = t.slice(0, -1);
+    return t + '…';
+  }
+  ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, W, H);
+  ctx.textBaseline = 'middle'; ctx.textAlign = 'left';
+  ctx.fillStyle = '#1b2530'; ctx.font = '800 34px ' + FONT;
+  ctx.fillText('Horarios · Semana del ' + fmtWeek(state.horariosWeek), pad + 6, 42);
+  ctx.fillStyle = '#667085'; ctx.font = '600 21px ' + FONT;
+  ctx.fillText('Cántaros, Cazos y Cantares · Calle Sol #840 Oriente, Ciudad Juárez', pad + 6, 78);
+  let y = titleH;
+  ctx.fillStyle = '#0d2e20'; ctx.fillRect(pad, y, W - pad * 2, headH);
+  ctx.fillStyle = '#ffffff'; ctx.font = '800 21px ' + FONT;
+  ctx.fillText('#', pad + 12, y + headH / 2);
+  ctx.fillText('NOMBRE', pad + noW + 10, y + headH / 2);
+  days.forEach((d, i) => {
+    const x = pad + noW + nameW + i * dayW;
+    const cx = x + dayW / 2;
+    ctx.textAlign = 'center';
+    ctx.font = '800 21px ' + FONT;
+    ctx.fillText(DIAS[i] + ' ' + d.getDate() + ' ' + MESES[d.getMonth()], cx, y + 22);
+    const dayEvs = evs.filter(e => e.dia === toISODate(d));
+    if (dayEvs.length) {
+      ctx.fillStyle = '#e3c15e'; ctx.font = '700 16px ' + FONT;
+      ctx.fillText(fit(dayEvs.map(e => (e.tipo === 'reservacion' ? '📅 ' : '🎉 ') + e.titulo).join(' · '), dayW - 12, '700 16px ' + FONT), cx, y + 48);
+      ctx.fillStyle = '#ffffff';
+    }
+    ctx.textAlign = 'left';
+  });
+  y += headH;
+  const shiftMap = {};
+  state.horarios.forEach(h => { shiftMap[h.staff_id + '|' + h.dia] = h.turno || ''; });
+  let n = 0;
+  if (!state.staff.length) {
+    ctx.fillStyle = '#667085'; ctx.font = '600 22px ' + FONT; ctx.textAlign = 'left';
+    ctx.fillText('Sin personal registrado. Corre el SQL de horarios en Supabase o agrega personal en la app.', pad + 10, y + 40);
+    y += 60;
+  }
+  AREAS.forEach(area => {
+    const members = state.staff.filter(s => s.area === area);
+    if (!members.length) return;
+    ctx.fillStyle = '#eef3f0'; ctx.fillRect(pad, y, W - pad * 2, areaH);
+    ctx.fillStyle = '#667085'; ctx.font = '800 19px ' + FONT;
+    ctx.fillText(area, pad + 12, y + areaH / 2);
+    y += areaH;
+    members.forEach(s => {
+      n++;
+      ctx.strokeStyle = '#e4e9e6'; ctx.lineWidth = 1;
+      ctx.strokeRect(pad + 0.5, y + 0.5, W - pad * 2 - 1, rowH - 1);
+      ctx.fillStyle = '#667085'; ctx.font = '700 20px ' + FONT; ctx.textAlign = 'right';
+      ctx.fillText(String(n), pad + noW - 10, y + rowH / 2);
+      ctx.textAlign = 'left'; ctx.fillStyle = '#1b2530'; ctx.font = '700 21px ' + FONT;
+      ctx.fillText(fit(s.nombre, nameW - 16, '700 21px ' + FONT), pad + noW + 10, y + rowH / 2);
+      days.forEach((d, i) => {
+        const v = String(shiftMap[s.id + '|' + toISODate(d)] || '').trim().toUpperCase();
+        const x = pad + noW + nameW + i * dayW;
+        if (v === 'OFF') { ctx.fillStyle = '#dbeafe'; ctx.fillRect(x + 1, y + 1, dayW - 2, rowH - 2); ctx.fillStyle = '#175cd3'; }
+        else if (v === 'F') { ctx.fillStyle = '#fdecea'; ctx.fillRect(x + 1, y + 1, dayW - 2, rowH - 2); ctx.fillStyle = '#c0392b'; }
+        else if (v) { ctx.fillStyle = '#f7faf8'; ctx.fillRect(x + 1, y + 1, dayW - 2, rowH - 2); ctx.fillStyle = '#1b2530'; }
+        else { ctx.fillStyle = '#667085'; }
+        if (v) {
+          ctx.font = '800 21px ' + FONT; ctx.textAlign = 'center';
+          ctx.fillText(fit(v, dayW - 8, '800 21px ' + FONT), x + dayW / 2, y + rowH / 2);
+          ctx.textAlign = 'left';
+        }
+      });
+      y += rowH;
+    });
+  });
+  y += 10;
+  ctx.fillStyle = '#1b2530'; ctx.font = '800 21px ' + FONT; ctx.textAlign = 'left';
+  if (evs.length) {
+    ctx.fillText('Eventos y reservaciones de la semana', pad + 6, y + 12);
+    y += 38;
+    ctx.font = '600 19px ' + FONT;
+    evs.forEach(e => {
+      const d = days.find(x => toISODate(x) === e.dia);
+      const label = d ? DIAS[days.indexOf(d)] + ' ' + d.getDate() + ' ' + MESES[d.getMonth()] : e.dia;
+      ctx.fillStyle = '#667085';
+      ctx.fillText('• ' + label + ' · ' + (e.tipo === 'reservacion' ? 'Reservación' : 'Evento') + ' · ' + e.titulo + (e.nota ? ' — ' + e.nota : ''), pad + 6, y + 10);
+      y += 32;
+    });
+  }
+  ctx.fillStyle = '#667085'; ctx.font = '600 17px ' + FONT;
+  ctx.fillText('Generado desde el dashboard Cántaros · OFF = descanso · F = falta · 11-CL = entrada 11:00 a cierre', pad + 6, H - 18);
+  canvas.toBlob(function(blob){
+    if (!blob) return;
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'horarios-' + state.horariosWeek + '.png';
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(function(){ URL.revokeObjectURL(a.href); }, 5000);
+  }, 'image/png');
+}
+
 /* ---------------- navegación y tema ---------------- */
 function showView(name){
   document.querySelectorAll('.view').forEach(v => v.classList.toggle('active', v.id === 'view-' + name));
@@ -1188,6 +1587,7 @@ function showView(name){
   if (name === 'inv-cocina') renderInventory('cocina');
   if (name === 'captura') refreshManualTable();
   if (name === 'docs') renderDocs();
+  if (name === 'horarios') renderHorarios();
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 function renderAll(){
@@ -1195,6 +1595,7 @@ function renderAll(){
   renderInventory('barra');
   renderInventory('cocina');
   renderDocs();
+  renderHorarios();
   fillProductSelect();
   refreshManualTable();
   const dl = $('invProducts');
@@ -1224,7 +1625,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   $('themeBtnM').addEventListener('click', toggle);
   document.querySelectorAll('[data-view]').forEach(b => b.addEventListener('click', () => showView(b.getAttribute('data-view'))));
   const monday = toISODate(mondayOf(new Date()));
-  ['fWeek', 'iWeek', 'posWeek', 'csvWeek'].forEach(id => { $(id).value = monday; });
+  ['fWeek', 'iWeek', 'posWeek', 'csvWeek', 'horariosWeekInput'].forEach(id => { $(id).value = monday; });
   $('weekSelect').addEventListener('change', async () => {
     state.selectedWeek = $('weekSelect').value;
     setStatus(null, 'Cargando semana…');
@@ -1245,9 +1646,18 @@ document.addEventListener('DOMContentLoaded', async () => {
   $('csvUploadBtn').addEventListener('click', uploadInvCSV);
   $('barraSearch').addEventListener('input', () => renderInventory('barra'));
   $('cocinaSearch').addEventListener('input', () => renderInventory('cocina'));
+  $('schedTable').addEventListener('change', onShiftChange);
+  $('horariosWeekInput').addEventListener('change', onHorariosWeekChange);
+  $('staffForm').addEventListener('submit', submitStaff);
+  $('eventForm').addEventListener('submit', submitEvent);
+  $('eventList').addEventListener('click', e => {
+    const btn = e.target.closest('[data-del-event]');
+    if (btn) deleteEvent(btn.getAttribute('data-del-event'));
+  });
+  $('exportSchedBtn').addEventListener('click', exportSchedulePNG);
   await loadConfig();
   await loadAll();
-  if (!LIVE) renderDocs(); // sin conexión: al menos mostrar los documentos conocidos
+  if (!LIVE) { renderDocs(); renderHorarios(); } // sin conexión: al menos mostrar los documentos conocidos y el aviso de horarios
 });
 </script>
 </body>
