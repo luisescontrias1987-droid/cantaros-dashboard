@@ -1,0 +1,1254 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cántaros · Dashboard de Ventas</title>
+<meta name="description" content="Panel de ventas, costos, inventario y documentos de Cántaros, Cazos y Cantares. Datos en vivo desde Supabase.">
+<style>
+:root{
+  --bg:#f2f5f3; --surface:#ffffff; --surface-2:#f7faf8; --text:#1b2530; --muted:#667085;
+  --border:#e4e9e6; --shadow:0 1px 2px rgba(16,24,40,.06),0 4px 16px rgba(16,24,40,.06);
+  --accent:#1e7a4c; --accent-soft:#e5f3ec; --accent-text:#14603b;
+  --gold:#b98a1d; --gold-soft:#fbf3dd; --danger:#c0392b; --danger-soft:#fdecea;
+  --warn:#9a6b0f; --warn-soft:#fdf3dc; --info:#175cd3; --info-soft:#eaf1fe;
+  --sidebar-bg:rgba(13,46,32,.82); --sidebar-border:rgba(255,255,255,.16);
+  --sidebar-text:#eef5f0; --sidebar-muted:#b7cdc0;
+  --radius:16px; --radius-sm:10px; --topbar-h:60px;
+}
+html[data-theme="dark"]{
+  --bg:#0e1412; --surface:#171f1c; --surface-2:#1d2823; --text:#e9efec; --muted:#9db0a6;
+  --border:#28342e; --shadow:0 1px 2px rgba(0,0,0,.4),0 4px 16px rgba(0,0,0,.35);
+  --accent:#3fb97e; --accent-soft:#173d2a; --accent-text:#7ed6a6;
+  --gold:#d9a92f; --gold-soft:#3a2f10; --danger:#f0857a; --danger-soft:#3d1d1a;
+  --warn:#e0aa3e; --warn-soft:#3a2f10; --info:#7aa7f5; --info-soft:#1a2c4d;
+  --sidebar-bg:rgba(10,26,19,.85); --sidebar-border:rgba(255,255,255,.12);
+  --sidebar-text:#e8f2ec; --sidebar-muted:#a9bfb2;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  background:var(--bg);color:var(--text);font-size:15px;line-height:1.45;
+  transition:background .3s ease,color .3s ease}
+h1,h2,h3{margin:0;line-height:1.25}
+a{color:var(--accent)}
+button{font:inherit;cursor:pointer}
+input,select,textarea{font:inherit;color:var(--text);background:var(--surface);border:1px solid var(--border);
+  border-radius:var(--radius-sm);padding:9px 11px;width:100%}
+input:focus,select:focus,textarea:focus{outline:2px solid var(--accent);outline-offset:1px;border-color:var(--accent)}
+label{display:block;font-size:13px;font-weight:600;margin:0 0 5px;color:var(--text)}
+.muted{color:var(--muted)} .small{font-size:13px} .tiny{font-size:12px}
+.money{font-variant-numeric:tabular-nums;white-space:nowrap}
+.num{font-variant-numeric:tabular-nums}
+
+/* ---------- layout ---------- */
+.app{display:flex;min-height:100vh}
+.sidebar{position:fixed;inset:14px auto 14px 14px;width:248px;z-index:40;display:flex;flex-direction:column;
+  background:var(--sidebar-bg);color:var(--sidebar-text);
+  border:1px solid var(--sidebar-border);border-radius:22px;
+  backdrop-filter:blur(24px) saturate(1.6);-webkit-backdrop-filter:blur(24px) saturate(1.6);
+  box-shadow:0 12px 40px rgba(0,0,0,.28),inset 0 1px 0 rgba(255,255,255,.14);padding:18px 14px;gap:6px}
+.brand{display:flex;align-items:center;gap:11px;padding:6px 8px 14px;border-bottom:1px solid var(--sidebar-border)}
+.brand-badge{width:44px;height:44px;border-radius:13px;display:grid;place-items:center;flex:none;
+  background:linear-gradient(135deg,rgba(255,255,255,.28),rgba(255,255,255,.06));
+  border:1px solid rgba(255,255,255,.35);box-shadow:inset 0 1px 0 rgba(255,255,255,.35),0 4px 14px rgba(0,0,0,.25);
+  font-size:22px}
+.brand h1{font-size:17px;letter-spacing:.2px}
+.brand p{margin:1px 0 0;font-size:11.5px;color:var(--sidebar-muted)}
+.nav{display:flex;flex-direction:column;gap:4px;margin-top:12px}
+.nav-label{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--sidebar-muted);
+  padding:10px 10px 4px}
+.nav-btn{display:flex;align-items:center;gap:11px;width:100%;text-align:left;padding:10px 12px;
+  border-radius:12px;border:1px solid transparent;background:transparent;color:var(--sidebar-text);
+  font-size:14.5px;font-weight:600;transition:background .18s ease,border-color .18s ease,transform .18s ease}
+.nav-btn:hover{background:rgba(255,255,255,.09);border-color:rgba(255,255,255,.14);transform:translateX(2px)}
+.nav-btn.active{background:rgba(255,255,255,.16);border-color:rgba(255,255,255,.32);
+  box-shadow:0 4px 18px rgba(0,0,0,.22),inset 0 1px 0 rgba(255,255,255,.25)}
+.nav-btn .ic{font-size:17px;width:22px;text-align:center;flex:none}
+.side-foot{margin-top:auto;padding:12px 8px 2px;border-top:1px solid var(--sidebar-border);display:flex;flex-direction:column;gap:10px}
+.side-week label{color:var(--sidebar-muted);font-size:11.5px}
+.side-week select{background:rgba(255,255,255,.1);color:var(--sidebar-text);border-color:rgba(255,255,255,.22)}
+.side-week select option{color:#1b2530}
+.theme-btn{display:flex;align-items:center;justify-content:space-between;width:100%;padding:9px 12px;
+  border-radius:12px;border:1px solid rgba(255,255,255,.22);background:rgba(255,255,255,.08);
+  color:var(--sidebar-text);font-size:13.5px;font-weight:600}
+.theme-btn:hover{background:rgba(255,255,255,.14)}
+.status-dot{display:inline-block;width:9px;height:9px;border-radius:50%;background:#f5b301;margin-right:6px;vertical-align:1px}
+.status-dot.ok{background:#3ddc84;box-shadow:0 0 8px #3ddc84}
+.status-dot.err{background:#ff6b5e}
+.main{flex:1;margin-left:276px;padding:22px 26px 110px;min-width:0}
+.topbar{display:none}
+
+/* ---------- cards, grids, animation ---------- */
+@keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+.view{display:none;animation:fadeIn .25s ease}
+.view.active{display:block}
+.view.active .card,.view.active .kpi{animation:fadeUp .45s cubic-bezier(.2,.7,.3,1) both}
+.view.active .kpi:nth-child(2){animation-delay:.05s}.view.active .kpi:nth-child(3){animation-delay:.1s}
+.view.active .kpi:nth-child(4){animation-delay:.15s}.view.active .kpi:nth-child(5){animation-delay:.2s}
+.view.active .kpi:nth-child(6){animation-delay:.25s}
+.page-head{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px;margin:4px 0 18px}
+.page-head h2{font-size:24px}
+.page-head p{margin:3px 0 0;color:var(--muted);font-size:14px}
+.kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:14px}
+.kpi{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);
+  padding:16px 18px;transition:transform .18s ease,box-shadow .18s ease}
+.kpi:hover{transform:translateY(-2px)}
+.kpi .k-label{font-size:12.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.kpi .k-value{font-size:27px;font-weight:800;margin:5px 0 2px;font-variant-numeric:tabular-nums}
+.kpi .k-sub{font-size:13px;color:var(--muted)}
+.kpi.accent .k-value{color:var(--accent-text)}
+.kpi.gold .k-value{color:var(--gold)}
+.kpi.danger .k-value{color:var(--danger)}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);
+  padding:18px 20px;margin-bottom:14px}
+.card h3{font-size:16px;margin-bottom:4px}
+.card .card-sub{color:var(--muted);font-size:13.5px;margin:0 0 14px}
+.badge{display:inline-block;font-size:11.5px;font-weight:700;padding:3px 9px;border-radius:999px;letter-spacing:.02em}
+.badge.green{background:var(--accent-soft);color:var(--accent-text)}
+.badge.gold{background:var(--gold-soft);color:var(--gold)}
+.badge.red{background:var(--danger-soft);color:var(--danger)}
+.badge.blue{background:var(--info-soft);color:var(--info)}
+.badge.grey{background:var(--surface-2);color:var(--muted);border:1px solid var(--border)}
+.empty{border:1.5px dashed var(--border);border-radius:var(--radius-sm);padding:18px;text-align:center;color:var(--muted)}
+.notice{border-radius:var(--radius-sm);padding:13px 15px;font-size:14px;margin-bottom:14px}
+.notice.warn{background:var(--warn-soft);color:var(--warn);border:1px solid var(--border)}
+.notice.err{background:var(--danger-soft);color:var(--danger);border:1px solid var(--border)}
+.notice.ok{background:var(--accent-soft);color:var(--accent-text);border:1px solid var(--border)}
+.notice.info{background:var(--info-soft);color:var(--info);border:1px solid var(--border)}
+
+/* ---------- bars & charts ---------- */
+.bar-row{display:grid;grid-template-columns:minmax(120px,1fr) 90px;gap:10px;align-items:center;margin:9px 0}
+.bar-row .bar-label{font-size:13.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bar-track{height:10px;background:var(--surface-2);border:1px solid var(--border);border-radius:999px;overflow:hidden}
+.bar-fill{height:100%;border-radius:999px;background:linear-gradient(90deg,var(--accent),#57b98a);transition:width .7s cubic-bezier(.2,.7,.3,1)}
+.bar-fill.gold{background:linear-gradient(90deg,var(--gold),#e3c15e)}
+.bar-val{text-align:right;font-size:13.5px;font-weight:700;font-variant-numeric:tabular-nums}
+.trend{display:flex;align-items:flex-end;gap:10px;height:150px;padding-top:8px}
+.trend-col{flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;min-width:0}
+.trend-bar{width:100%;max-width:64px;border-radius:8px 8px 3px 3px;min-height:6px;
+  background:linear-gradient(180deg,var(--accent),#57b98a);transition:height .7s cubic-bezier(.2,.7,.3,1)}
+.trend-val{font-size:12px;font-weight:700;font-variant-numeric:tabular-nums;text-align:center}
+.trend-lab{font-size:11.5px;color:var(--muted);text-align:center}
+.delta{font-weight:800;font-variant-numeric:tabular-nums}
+.delta.up{color:var(--accent-text)} .delta.down{color:var(--danger)} .delta.flat{color:var(--muted)}
+.donut-wrap{display:flex;align-items:center;gap:18px;flex-wrap:wrap}
+.donut{width:132px;height:132px;flex:none}
+.legend{font-size:13.5px;display:flex;flex-direction:column;gap:7px}
+.legend .sw{display:inline-block;width:11px;height:11px;border-radius:3px;margin-right:7px;vertical-align:-1px}
+
+/* ---------- tables ---------- */
+.table-wrap{overflow-x:auto;margin:0 -4px;padding:0 4px}
+table{width:100%;border-collapse:collapse;font-size:13.5px;min-width:640px}
+th,td{padding:8px 10px;text-align:left;border-bottom:1px solid var(--border);white-space:nowrap}
+th{font-size:11.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);position:sticky;top:0;background:var(--surface)}
+td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
+tr.loss-row{background:var(--danger-soft)}
+tr.surplus-row{background:var(--warn-soft)}
+tr.section-row td{font-weight:800;background:var(--surface-2);text-transform:uppercase;font-size:11.5px;letter-spacing:.06em;color:var(--muted)}
+.search-row{display:flex;gap:10px;align-items:center;margin-bottom:12px}
+.search-row input{max-width:340px}
+
+/* ---------- forms ---------- */
+.form-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:13px}
+.form-grid .full{grid-column:1/-1}
+.check-row{display:flex;align-items:center;gap:9px;padding:9px 0}
+.check-row input{width:auto;accent-color:var(--accent)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:10px 18px;border-radius:11px;
+  border:1px solid transparent;font-weight:700;font-size:14.5px;background:var(--accent);color:#fff;
+  transition:transform .15s ease,box-shadow .15s ease,background .15s ease}
+.btn:hover{transform:translateY(-1px);box-shadow:0 6px 16px rgba(30,122,76,.35)}
+.btn:disabled{opacity:.55;cursor:wait;transform:none;box-shadow:none}
+.btn.ghost{background:var(--surface);color:var(--text);border-color:var(--border)}
+.btn.ghost:hover{box-shadow:var(--shadow)}
+.btn.small{padding:7px 12px;font-size:13px}
+.btn.danger{background:var(--danger)}
+.form-msg{margin-top:11px;font-size:14px}
+.form-msg.ok{color:var(--accent-text)} .form-msg.err{color:var(--danger)}
+.file-box{border:1.5px dashed var(--border);border-radius:var(--radius-sm);padding:16px;background:var(--surface-2)}
+.file-box input[type=file]{border:none;background:transparent;padding:0}
+.steps{margin:0;padding-left:20px;color:var(--text)}
+.steps li{margin:7px 0}
+.steps code,code.inline{background:var(--surface-2);border:1px solid var(--border);border-radius:6px;
+  padding:1px 6px;font-size:12.5px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
+.doc-card{display:flex;gap:14px;align-items:flex-start}
+.doc-ic{width:46px;height:46px;flex:none;border-radius:12px;display:grid;place-items:center;font-size:22px;
+  background:var(--accent-soft);color:var(--accent-text)}
+.doc-card h3{font-size:15.5px}
+
+/* ---------- mobile ---------- */
+.mobilenav{display:none}
+@media (max-width:1100px){.kpis{grid-template-columns:repeat(2,1fr)}.grid2{grid-template-columns:1fr}.form-grid{grid-template-columns:repeat(2,1fr)}}
+@media (max-width:860px){
+  .sidebar{display:none}
+  .main{margin-left:0;padding:calc(var(--topbar-h) + 14px) 14px 120px}
+  .topbar{display:flex;position:fixed;top:0;left:0;right:0;height:var(--topbar-h);z-index:40;
+    align-items:center;justify-content:space-between;padding:0 14px;
+    background:var(--sidebar-bg);color:var(--sidebar-text);
+    backdrop-filter:blur(20px) saturate(1.5);-webkit-backdrop-filter:blur(20px) saturate(1.5);
+    border-bottom:1px solid var(--sidebar-border)}
+  .topbar .brand{padding:0;border:none}
+  .topbar .brand-badge{width:38px;height:38px;font-size:19px}
+  .topbar .brand h1{font-size:16px}
+  .mobilenav{display:flex;position:fixed;left:10px;right:10px;bottom:10px;z-index:40;
+    background:var(--surface);border:1px solid var(--border);border-radius:18px;box-shadow:var(--shadow);
+    padding:6px;justify-content:space-around}
+  .mobilenav button{flex:1;background:none;border:none;border-radius:12px;padding:8px 2px 6px;
+    color:var(--muted);font-size:10.5px;font-weight:700;display:flex;flex-direction:column;align-items:center;gap:2px}
+  .mobilenav button .ic{font-size:19px}
+  .mobilenav button.active{color:var(--accent-text);background:var(--accent-soft)}
+  .kpis{grid-template-columns:repeat(2,1fr);gap:10px}
+  .kpi .k-value{font-size:22px}
+  .form-grid{grid-template-columns:1fr}
+  .page-head h2{font-size:21px}
+}
+@media (prefers-reduced-motion:reduce){
+  *{animation:none!important;transition:none!important;scroll-behavior:auto!important}
+}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- ============ SIDEBAR (escritorio, glassy) ============ -->
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-badge">🍹</div>
+      <div>
+        <h1>Cántaros</h1>
+        <p>Cazos y Cantares · Dashboard</p>
+      </div>
+    </div>
+    <nav class="nav" id="navDesktop">
+      <div class="nav-label">Operación</div>
+      <button class="nav-btn active" data-view="panel"><span class="ic">📊</span>Panel ejecutivo</button>
+      <button class="nav-btn" data-view="captura"><span class="ic">📝</span>Captura semanal</button>
+      <div class="nav-label">Inventario</div>
+      <button class="nav-btn" data-view="inv-barra"><span class="ic">🍺</span>Inventario de barra</button>
+      <button class="nav-btn" data-view="inv-cocina"><span class="ic">🥬</span>Inventario de cocina</button>
+      <div class="nav-label">Empresa</div>
+      <button class="nav-btn" data-view="docs"><span class="ic">📚</span>Documentos</button>
+    </nav>
+    <div class="side-foot">
+      <div class="side-week">
+        <label for="weekSelect">Semana (lunes)</label>
+        <select id="weekSelect"><option value="2026-11-02">Semana del 02 nov 2026</option></select>
+      </div>
+      <button class="theme-btn" id="themeBtn" type="button"><span>🌙 Tema oscuro</span><span id="themeIcon">○</span></button>
+      <div class="small" style="color:var(--sidebar-muted)">
+        <span class="status-dot" id="statusDot"></span><span id="statusText">Conectando…</span>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ============ TOPBAR (móvil) ============ -->
+  <header class="topbar">
+    <div class="brand">
+      <div class="brand-badge">🍹</div>
+      <div><h1>Cántaros</h1><p style="margin:0;font-size:11px;color:var(--sidebar-muted)">Dashboard · <span id="statusTextM">Conectando…</span></p></div>
+    </div>
+    <button class="theme-btn" id="themeBtnM" type="button" style="width:auto;padding:8px 12px">🌙</button>
+  </header>
+
+  <!-- ============ CONTENIDO ============ -->
+  <main class="main">
+    <div id="configBanner" class="notice err" style="display:none"></div>
+
+    <!-- ===== PANEL EJECUTIVO ===== -->
+    <section class="view active" id="view-panel">
+      <div class="page-head">
+        <div>
+          <h2>Panel ejecutivo</h2>
+          <p id="panelSubtitle">Semana del 02 nov 2026 · Ventas de barra (Soft Restaurant) · <span class="badge grey" id="liveBadge">cargando datos en vivo…</span></p>
+        </div>
+        <button class="btn ghost small" id="refreshBtn" type="button">↻ Actualizar datos</button>
+      </div>
+
+      <div class="kpis" id="kpis">
+        <div class="kpi accent"><div class="k-label">Venta neta</div><div class="k-value money" id="kVentaNeta">$36,455.55</div><div class="k-sub" id="kVentaNetaSub">con IVA $39,372 · IVA 8%</div></div>
+        <div class="kpi"><div class="k-label">Costo teórico</div><div class="k-value money" id="kCosto">$10,603.29</div><div class="k-sub" id="kCostoSub">29.1% de la venta neta</div></div>
+        <div class="kpi gold"><div class="k-label">Margen bruto</div><div class="k-value money" id="kMargen">$25,815.23</div><div class="k-sub" id="kMargenSub">70.9% sobre lo costeado</div></div>
+        <div class="kpi"><div class="k-label">Unidades vendidas</div><div class="k-value num" id="kUnidades">439</div><div class="k-sub" id="kUnidadesSub">58 productos con venta</div></div>
+        <div class="kpi"><div class="k-label">Precio prom. por unidad</div><div class="k-value money" id="kPpu">$83.04</div><div class="k-sub">No es ticket promedio: el reporte no trae cuentas ni folios</div></div>
+        <div class="kpi"><div class="k-label">Productos con costo</div><div class="k-value num" id="kConCosto">57 / 58</div><div class="k-sub" id="kConCostoSub">99.9% de la venta neta cubierta</div></div>
+      </div>
+
+      <div class="grid2">
+        <div class="card">
+          <h3>Comparación con la semana anterior</h3>
+          <p class="card-sub" id="compareSub">Venta neta, margen y unidades, en $ y %.</p>
+          <div id="compareBox"></div>
+        </div>
+        <div class="card">
+          <h3>Tendencia de ventas</h3>
+          <p class="card-sub">Venta neta por semana cargada en la base. Solo semanas reales.</p>
+          <div id="trendBox"></div>
+        </div>
+      </div>
+
+      <div class="grid2">
+        <div class="card">
+          <h3>Venta neta por grupo</h3>
+          <p class="card-sub">Del reporte de Soft Restaurant de la semana seleccionada.</p>
+          <div id="groupBox"></div>
+        </div>
+        <div class="card">
+          <h3>Margen vs costo</h3>
+          <p class="card-sub">De cada $100 netos costeados, cuánto es margen y cuánto costo.</p>
+          <div class="donut-wrap">
+            <svg class="donut" viewBox="0 0 132 132" id="donutSvg" role="img" aria-label="Margen contra costo"></svg>
+            <div class="legend" id="donutLegend"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>Top 10 productos por venta</h3>
+        <p class="card-sub">Venta con IVA, costo teórico y margen de la semana seleccionada.</p>
+        <div class="table-wrap"><table id="topTable">
+          <thead><tr><th>#</th><th>Producto</th><th class="num">Cant.</th><th class="num">Venta con IVA</th><th class="num">Venta neta</th><th class="num">Costo</th><th class="num">Margen</th></tr></thead>
+          <tbody></tbody>
+        </table></div>
+      </div>
+
+      <div class="grid2">
+        <div class="card">
+          <h3>⚠️ Alertas de inventario</h3>
+          <p class="card-sub" id="alertSub">Faltantes de la última semana de inventario cargada.</p>
+          <div id="alertBox"></div>
+        </div>
+        <div class="card">
+          <h3>Productos sin costo</h3>
+          <p class="card-sub">Se venden pero no tienen costo en el catálogo: su margen no se puede calcular.</p>
+          <div id="noCostBox"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== CAPTURA SEMANAL ===== -->
+    <section class="view" id="view-captura">
+      <div class="page-head">
+        <div>
+          <h2>Captura semanal</h2>
+          <p>Lo que el reporte de Soft Restaurant no trae: ventas por mesero y por turno, cortesías y descuentos. Todo se guarda en Supabase y se ve en el panel.</p>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>Venta por mesero</h3>
+        <p class="card-sub">Una fila por producto vendido. El costo se toma del catálogo automáticamente.</p>
+        <form id="saleForm">
+          <div class="form-grid">
+            <div><label for="fWeek">Semana (lunes)</label><input type="date" id="fWeek" required></div>
+            <div><label for="fWaiter">Mesero</label><input type="text" id="fWaiter" placeholder="Nombre del mesero" required></div>
+            <div><label for="fShift">Turno</label><input type="text" id="fShift" placeholder="Ej. Matutino, Vespertino, Nocturno" required></div>
+            <div class="full"><label for="fProduct">Producto</label><select id="fProduct" required><option value="">— Elige un producto —</option></select></div>
+            <div><label for="fQty">Cantidad</label><input type="number" id="fQty" min="0.5" step="0.5" value="1" required></div>
+            <div><label for="fPrice">Precio unitario ($)</label><input type="number" id="fPrice" min="0" step="0.01" required></div>
+            <div><label for="fDiscount">Descuento ($)</label><input type="number" id="fDiscount" min="0" step="0.01" value="0"></div>
+            <div class="full check-row"><input type="checkbox" id="fCourtesy"><label for="fCourtesy" style="margin:0">Es cortesía (no se cobra; se registra como venta en $0)</label></div>
+          </div>
+          <div style="margin-top:14px;display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+            <button class="btn" type="submit" id="saleSubmit">Guardar venta</button>
+            <span class="small muted" id="salePreview"></span>
+          </div>
+          <div class="form-msg" id="saleMsg"></div>
+        </form>
+      </div>
+
+      <div class="card">
+        <h3>Capturas manuales de la semana</h3>
+        <p class="card-sub" id="manualSub">Ventas registradas a mano en la semana seleccionada.</p>
+        <div class="table-wrap"><table id="manualTable">
+          <thead><tr><th>Mesero</th><th>Turno</th><th>Producto</th><th class="num">Cant.</th><th class="num">Precio</th><th class="num">Desc.</th><th class="num">Total</th><th>Cortesía</th></tr></thead>
+          <tbody></tbody>
+        </table></div>
+      </div>
+
+      <div class="card">
+        <h3>Conteo de inventario (una fila)</h3>
+        <p class="card-sub">Captura un producto contado esta semana. El sistema calcula total, diferencia, perdido y sobrante en $.</p>
+        <form id="invForm">
+          <div class="form-grid">
+            <div><label for="iArea">Área</label><select id="iArea"><option value="barra">Barra</option><option value="cocina">Cocina</option></select></div>
+            <div><label for="iWeek">Semana (lunes)</label><input type="date" id="iWeek" required></div>
+            <div><label for="iSection">Sección</label><input type="text" id="iSection" placeholder="Ej. CERVEZA, ABARROTES"></div>
+            <div class="full"><label for="iProduct">Producto</label><input type="text" id="iProduct" list="invProducts" placeholder="Nombre exacto del producto" required><datalist id="invProducts"></datalist></div>
+            <div><label for="iUnit">Unidad</label><input type="text" id="iUnit" placeholder="pz, oz, L, kg…"></div>
+            <div><label for="iCost">Costo unitario ($)</label><input type="number" id="iCost" min="0" step="0.01" placeholder="0.00"></div>
+            <div><label for="iMin">Mínimo</label><input type="number" id="iMin" min="0" step="0.01" placeholder="0"></div>
+            <div><label for="iInicial">Inventario inicial</label><input type="number" id="iInicial" step="0.01" value="0"></div>
+            <div><label for="iCompras">Compras</label><input type="number" id="iCompras" step="0.01" value="0"></div>
+            <div><label for="iAlmacen">Almacén</label><input type="number" id="iAlmacen" step="0.01" value="0"></div>
+            <div><label for="iDisplay">Display</label><input type="number" id="iDisplay" step="0.01" value="0"></div>
+            <div><label for="iBarra">Barra</label><input type="number" id="iBarra" step="0.01" value="0"></div>
+            <div><label for="iVenta">Venta</label><input type="number" id="iVenta" step="0.01" value="0"></div>
+          </div>
+          <div style="margin-top:14px"><button class="btn" type="submit" id="invSubmit">Guardar conteo</button></div>
+          <div class="form-msg" id="invMsg"></div>
+        </form>
+      </div>
+
+      <div class="grid2">
+        <div class="card">
+          <h3>Subir reporte de Soft Restaurant (CSV)</h3>
+          <p class="card-sub">Pega el archivo del reporte tal cual sale del POS. Se guarda en la tabla de staging y se cruza con el catálogo para calcular costo y margen.</p>
+          <div class="file-box">
+            <label for="posWeek">Semana del reporte (lunes)</label>
+            <input type="date" id="posWeek" style="margin-bottom:10px">
+            <input type="file" id="posFile" accept=".csv,text/csv">
+            <div style="margin-top:12px"><button class="btn" type="button" id="posUploadBtn">Subir reporte</button></div>
+            <div class="form-msg" id="posMsg"></div>
+          </div>
+        </div>
+        <div class="card">
+          <h3>Subir conteo de inventario (CSV)</h3>
+          <p class="card-sub">El archivo de Excel de la semana, exportado a CSV, con las columnas del inventario.</p>
+          <div class="file-box">
+            <label for="csvArea">Área</label>
+            <select id="csvArea" style="margin-bottom:10px"><option value="barra">Barra</option><option value="cocina">Cocina</option></select>
+            <label for="csvWeek">Semana (lunes)</label>
+            <input type="date" id="csvWeek" style="margin-bottom:10px">
+            <input type="file" id="csvFile" accept=".csv,text/csv">
+            <div style="margin-top:12px"><button class="btn" type="button" id="csvUploadBtn">Subir conteo</button></div>
+            <div class="form-msg" id="csvMsg"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== INVENTARIO BARRA ===== -->
+    <section class="view" id="view-inv-barra">
+      <div class="page-head">
+        <div>
+          <h2>Inventario de barra</h2>
+          <p id="barraSub">Semana del 23 nov 2026 · 87 productos · conteo en onzas para licores.</p>
+        </div>
+      </div>
+      <div class="kpis" id="barraKpis">
+        <div class="kpi"><div class="k-label">Valor total</div><div class="k-value money" id="bValor">$107,811.06</div><div class="k-sub" id="bValorSub">87 productos en inventario</div></div>
+        <div class="kpi danger"><div class="k-label">Perdido ($)</div><div class="k-value money" id="bPerdido">$2,253.15</div><div class="k-sub" id="bPerdidoSub">10 productos con faltante</div></div>
+        <div class="kpi gold"><div class="k-label">Sobrante ($)</div><div class="k-value money" id="bSobrante">$5,592.00</div><div class="k-sub">9 productos con sobrante · más que el faltante</div></div>
+      </div>
+      <div class="card">
+        <div class="search-row">
+          <input type="search" id="barraSearch" placeholder="Buscar producto o sección…">
+          <span class="badge grey" id="barraCount"></span>
+        </div>
+        <div class="table-wrap"><table id="barraTable">
+          <thead><tr><th>Producto</th><th>Sección</th><th>Unidad</th><th class="num">Total</th><th class="num">Costo</th><th class="num">Valor total</th><th class="num">Perdido</th><th class="num">Perdido ($)</th><th class="num">Sobrante</th><th class="num">Sobrante ($)</th><th class="num">% Perdido</th></tr></thead>
+          <tbody></tbody>
+        </table></div>
+      </div>
+    </section>
+
+    <!-- ===== INVENTARIO COCINA ===== -->
+    <section class="view" id="view-inv-cocina">
+      <div class="page-head">
+        <div>
+          <h2>Inventario de cocina</h2>
+          <p id="cocinaSub">Abarrotes, químicos, refrescos, fruta y verdura, desechables.</p>
+        </div>
+      </div>
+      <div class="kpis" id="cocinaKpis">
+        <div class="kpi"><div class="k-label">Valor total</div><div class="k-value money" id="cValor">—</div><div class="k-sub" id="cValorSub">85 productos en plantilla</div></div>
+        <div class="kpi danger"><div class="k-label">Perdido ($)</div><div class="k-value money" id="cPerdido">—</div><div class="k-sub">Sin conteos aún</div></div>
+        <div class="kpi gold"><div class="k-label">Sobrante ($)</div><div class="k-value money" id="cSobrante">—</div><div class="k-sub">Sin conteos aún</div></div>
+      </div>
+      <div class="card">
+        <div class="search-row">
+          <input type="search" id="cocinaSearch" placeholder="Buscar producto o sección…">
+          <span class="badge grey" id="cocinaCount"></span>
+        </div>
+        <div class="table-wrap"><table id="cocinaTable">
+          <thead><tr><th>Producto</th><th>Sección</th><th>Unidad</th><th class="num">Total</th><th class="num">Costo</th><th class="num">Valor total</th><th class="num">Perdido</th><th class="num">Perdido ($)</th><th class="num">Sobrante</th><th class="num">Sobrante ($)</th><th class="num">% Perdido</th></tr></thead>
+          <tbody></tbody>
+        </table></div>
+      </div>
+    </section>
+
+    <!-- ===== DOCUMENTOS ===== -->
+    <section class="view" id="view-docs">
+      <div class="page-head">
+        <div>
+          <h2>Documentos</h2>
+          <p>Manuales, fichas técnicas y menú de la casa. Aquí también está la guía para subir cada semana.</p>
+        </div>
+      </div>
+      <div id="docsList"></div>
+      <div class="card">
+        <h3>Guía de carga semanal</h3>
+        <p class="card-sub">Todo se divide por semana: cada semana se identifica por su lunes (week_start). Hay dos formas de subir cada cosa; elige la que te acomode.</p>
+        <h3 style="font-size:15px;margin-top:14px">📄 Ventas (reporte de Soft Restaurant)</h3>
+        <ol class="steps">
+          <li><b>Opción A — pegar en Supabase:</b> en el panel de Supabase abre <code class="inline">Table Editor → ventas_pos_import → Insert → Paste rows</code> y pega el CSV del reporte tal cual (columnas CLAVE, DESCRIPCION, GRUPO, PRECIO, CANTIDAD, VENTA_TOTAL, COSTO, COSTO_TOTAL, VENTA_COSTO, PRECIO_DE_VENTA, PRECIO_DE_CATALOGO, VENTA_TOTAL_PRECIO_CATALOGO, TASA_IVA), con la semana puesta en <code class="inline">week_start</code>. La app cruza con el catálogo y calcula costo y margen.</li>
+          <li><b>Opción B — subir el archivo en esta app:</b> en <b>Captura semanal → Subir reporte de Soft Restaurant (CSV)</b>, elige la semana y el archivo CSV. La app guarda el staging y genera las ventas con costo automáticamente.</li>
+          <li>Si se pega dos veces la misma semana, la base la rechaza (unique por semana + clave). Para corregirla, se borra esa semana y se vuelve a subir.</li>
+        </ol>
+        <h3 style="font-size:15px;margin-top:18px">🍺 Inventario de barra y cocina</h3>
+        <ol class="steps">
+          <li><b>Opción A — pegar en Supabase:</b> en <code class="inline">Table Editor → inventory_weekly</code> (barra) o <code class="inline">inventory_cocina</code> (cocina), pega las filas de la semana. Solo captura Inicial, Compras, Almacén, Display, Barra y Venta; el resto (total, diferencia, perdido, sobrante y sus $) se calcula solo.</li>
+          <li><b>Opción B — subir el archivo en esta app:</b> en <b>Captura semanal → Subir conteo de inventario (CSV)</b>, elige el área, la semana y el archivo. También puedes capturar un producto a la vez en <b>Conteo de inventario (una fila)</b>.</li>
+          <li>El sobrante también vale dinero: esta semana el sobrante de barra es $5,592, más que el faltante ($2,253). Revisa los sobrantes grandes (Miller Caguama +59, Tecate Roja Media +58): pueden ser errores de captura o compras no registradas.</li>
+        </ol>
+        <h3 style="font-size:15px;margin-top:18px">🧾 Ventas por mesero, cortesías y descuentos</h3>
+        <ol class="steps">
+          <li>Se capturan aquí mismo, en <b>Captura semanal → Venta por mesero</b>. El reporte del POS no trae mesero, turno ni folio, así que esta captura es la única fuente de esas dimensiones.</li>
+          <li>Las cortesías se marcan con la casilla y se guardan en $0; los descuentos se anotan en pesos en el mismo renglón.</li>
+        </ol>
+      </div>
+    </section>
+  </main>
+
+  <!-- ============ NAV INFERIOR (móvil) ============ -->
+  <nav class="mobilenav" id="navMobile">
+    <button class="active" data-view="panel"><span class="ic">📊</span>Panel</button>
+    <button data-view="captura"><span class="ic">📝</span>Captura</button>
+    <button data-view="inv-barra"><span class="ic">🍺</span>Barra</button>
+    <button data-view="inv-cocina"><span class="ic">🥬</span>Cocina</button>
+    <button data-view="docs"><span class="ic">📚</span>Docs</button>
+  </nav>
+</div>
+<script>
+'use strict';
+/* ================================================================
+   Dashboard Cántaros — datos en vivo desde Supabase (PostgREST).
+   La app nunca guarda llaves: al cargar pide /api/config y usa
+   NEXT_PUBLIC_SUPABASE_URL y NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
+   que Vercel inyecta en esa función. Sin config, muestra el aviso
+   y deja las cifras de la última semana conocida como referencia.
+   ================================================================ */
+
+// Mapa POS -> [clave base, costo unitario ya con multiplicador de promo].
+// Generado 24 nov 2026 desde weekly_sales real (58 filas). Solo la
+// clave 10005 (CLAMATO PARA CERVEZA) no tiene costo en ningún archivo.
+const POS_MAP = {"11011":["B024",34.0],"2007":["B028",18.0],"7003":["B025",33.0],"11008":["B014",36.0],"11001":["B193",28.06],"10015":["B176",55.0],"1022002":["B181",16.0],"16044":["B182",16.0],"10002":["B181",16.0],"10001":["B181",16.0],"10003":["B181",16.0],"10010":["B181",16.0],"20001":["B186",25.0],"12049":["B004",48.14],"12053":["B004",48.14],"12050":["B004",48.14],"12051":["B003",32.84],"12047":["B001",17.16],"12002":["B002",24.16],"16034":["B004",144.42],"16037":["B003",98.52],"7007":["B048",24.0],"7011":["B061",50.0],"10013":["B067",16.0],"10012":["B063",55.0],"10005":[null,null],"7018":["B062",33.0],"7002":["B058",14.125],"7035":["B057",110.0],"7013":["B055",17.0],"720006":["B057",17.0],"7034":["B056",17.0],"16095":["B047",14.792],"7008":["B051",17.333],"10009":["B065",6.0],"7010":["B057",17.0],"7009":["B056",17.0],"10006":["B064",6.0],"10007":["B064",6.0],"10008":["B064",6.0],"7005":["B060",14.125],"7036":["B052",18.5],"7012":["B052",18.5],"2024":["B014",36.0],"13027":["B112",26.56],"13053":["B073",48.3527],"13075":["B109",9.54],"13084":["B106",102.44],"13069":["B099",18.3978],"26001":["B057",33.0],"9006":["B179",16.0],"9001":["B183",14.0],"9002":["B183",14.0],"9005":["B183",14.0],"9004":["B183",14.0],"9013":["B183",14.0],"9007":["B177",13.0],"9010":["B183",14.0]};
+
+// Semana de referencia (últimos datos conocidos, solo como respaldo
+// mientras cargan los datos en vivo; nunca se inventan otras semanas).
+const FALLBACK_WEEK = '2026-11-02';
+const FALLBACK_INV_WEEK = '2026-11-23';
+
+let CFG = { url: null, anonKey: null };
+let LIVE = false;
+let LIVE_ERROR = null;
+
+const state = {
+  weeks: [],            // filas de ventas_semanales, desc por week_start
+  selectedWeek: FALLBACK_WEEK,
+  products: [],
+  productsByClave: {},
+  salesRows: [],        // weekly_sales de la semana seleccionada
+  salesDesc: {},        // pos_clave -> descripcion (de ventas_pos_import)
+  invResumen: [],       // inventario_semanal_resumen
+  invBarra: [], invCocina: [],
+  invWeekBarra: FALLBACK_INV_WEEK, invWeekCocina: FALLBACK_INV_WEEK,
+  docs: [],
+  loaded: false,
+};
+
+/* ---------------- utilidades ---------------- */
+const $ = id => document.getElementById(id);
+const MESES = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+function fmtMoney(n){ if(n==null||n===''||isNaN(Number(n))) return '—'; return '$' + Number(n).toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2}); }
+function fmtNum(n){ if(n==null||n===''||isNaN(Number(n))) return '—'; return Number(n).toLocaleString('es-MX'); }
+function fmtPct(n){ if(n==null||isNaN(Number(n))) return '—'; return (Number(n)*100).toFixed(1).replace('.',',') + ' %'; }
+function fmtWeek(d){ if(!d) return '—'; const p = String(d).split('-'); if(p.length!==3) return String(d); return Number(p[2]) + ' ' + MESES[Number(p[1])-1] + ' ' + p[0]; }
+function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function mondayOf(d){ const x = new Date(d.getFullYear(), d.getMonth(), d.getDate()); const day = (x.getDay()+6)%7; x.setDate(x.getDate()-day); return x; }
+function toISODate(d){ return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0'); }
+function num(v, def){ const n = parseFloat(v); return isNaN(n) ? (def==null?0:def) : n; }
+function deltaHtml(cur, prev, fmt){
+  if(prev==null || prev===0 || cur==null) return '<span class="delta flat">—</span>';
+  const diff = cur - prev, pct = diff / Math.abs(prev) * 100;
+  const cls = diff === 0 ? 'flat' : (diff > 0 ? 'up' : 'down');
+  const arrow = diff > 0 ? '▲' : (diff < 0 ? '▼' : '•');
+  const sign = diff > 0 ? '+' : '';
+  const f = fmt || fmtMoney;
+  return '<span class="delta ' + cls + '">' + arrow + ' ' + sign + f(diff) + ' (' + sign + pct.toFixed(1).replace('.',',') + ' %)</span>';
+}
+
+/* ---------------- Supabase (PostgREST, fetch directo) ---------------- */
+async function sb(resource, opts){
+  opts = opts || {};
+  const qs = new URLSearchParams();
+  if (opts.select) qs.set('select', opts.select);
+  if (opts.order) qs.set('order', opts.order);
+  if (opts.limit) qs.set('limit', String(opts.limit));
+  if (opts.query) Object.keys(opts.query).forEach(k => qs.set(k, opts.query[k]));
+  const url = CFG.url.replace(/\/$/, '') + '/rest/v1/' + resource + (qs.toString() ? '?' + qs.toString() : '');
+  const headers = { apikey: CFG.anonKey, Authorization: 'Bearer ' + CFG.anonKey, Accept: 'application/json' };
+  if (opts.prefer) headers.Prefer = opts.prefer;
+  if (opts.body !== undefined) headers['Content-Type'] = 'application/json';
+  const res = await fetch(url, { method: opts.method || 'GET', headers: headers,
+    body: opts.body !== undefined ? JSON.stringify(opts.body) : undefined });
+  const text = await res.text();
+  let data = null; try { data = text ? JSON.parse(text) : null; } catch (e) { data = null; }
+  if (!res.ok) { const err = new Error('Supabase ' + res.status); err.status = res.status; err.data = data; throw err; }
+  return data;
+}
+async function sbChunks(resource, rows, opts){
+  // Inserta en bloques de 40 filas para no saturar la petición.
+  const out = [];
+  for (let i = 0; i < rows.length; i += 40) {
+    const chunk = rows.slice(i, i + 40);
+    const r = await sb(resource, Object.assign({}, opts, { method: 'POST', body: chunk, prefer: (opts && opts.prefer) || 'return=representation' }));
+    if (Array.isArray(r)) out.push.apply(out, r);
+  }
+  return out;
+}
+
+/* ---------------- estado de conexión ---------------- */
+function setStatus(ok, msg){
+  const dot = $('statusDot'); if (dot) dot.className = 'status-dot' + (ok === true ? ' ok' : (ok === false ? ' err' : ''));
+  const t = $('statusText'); if (t) t.textContent = msg;
+  const tm = $('statusTextM'); if (tm) tm.textContent = msg;
+  const badge = $('liveBadge');
+  if (badge) { badge.textContent = msg; badge.className = 'badge ' + (ok === true ? 'green' : (ok === false ? 'red' : 'grey')); }
+}
+function showConfigBanner(){
+  const b = $('configBanner');
+  b.style.display = 'block';
+  b.innerHTML = '<b>Supabase aún no está conectado en Vercel.</b> Para ver los datos en vivo, en Vercel abre el proyecto → Settings → Environment Variables y agrega <b>NEXT_PUBLIC_SUPABASE_URL</b> y <b>NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY</b> (están en Supabase: botón Connect o Settings → API Keys), luego vuelve a desplegar. Las cifras que ves abajo son las de la última semana conocida (01–09 nov 2026), no datos en vivo.';
+}
+async function loadConfig(){
+  try {
+    const r = await fetch('/api/config', { cache: 'no-store' });
+    if (!r.ok) throw new Error('config HTTP ' + r.status);
+    const j = await r.json();
+    CFG.url = j.url || null; CFG.anonKey = j.anonKey || null;
+  } catch (e) { CFG.url = null; CFG.anonKey = null; }
+  LIVE = !!(CFG.url && CFG.anonKey);
+  if (!LIVE) { setStatus(false, 'Sin conexión a Supabase'); showConfigBanner(); return; }
+  setStatus(null, 'Conectando a Supabase…');
+}
+
+/* ---------------- carga de datos ---------------- */
+async function loadAll(){
+  if (!LIVE) return;
+  try {
+    const results = await Promise.all([
+      sb('ventas_semanales', { select: '*', order: 'week_start.desc' }),
+      sb('inventario_semanal_resumen', { select: '*', order: 'week_start.desc' }),
+      sb('products', { select: 'clave,nombre,grupo,precio_pos,costo_unitario', order: 'nombre.asc' }),
+      sb('documents', { select: '*', order: 'title.asc' }),
+    ]);
+    state.weeks = results[0] || [];
+    state.invResumen = results[1] || [];
+    state.products = results[2] || [];
+    state.docs = results[3] || [];
+    state.productsByClave = {};
+    state.products.forEach(p => { state.productsByClave[p.clave] = p; });
+    state.loaded = true;
+    setStatus(true, 'En vivo · Supabase');
+    buildWeekSelector();
+    await loadWeekData();
+    renderAll();
+  } catch (e) {
+    LIVE_ERROR = e;
+    setStatus(false, 'Error al leer Supabase');
+    const b = $('configBanner');
+    b.style.display = 'block';
+    b.innerHTML = '<b>No se pudieron leer los datos de Supabase</b> (' + esc(e.message) + '). Revisa que las variables NEXT_PUBLIC_SUPABASE_URL y NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY estén bien puestas en Vercel y que las tablas estén expuestas en Supabase (Integrations → Data API).';
+  }
+}
+
+function buildWeekSelector(){
+  const sel = $('weekSelect');
+  const all = {};
+  state.weeks.forEach(w => { all[w.week_start] = true; });
+  state.invResumen.forEach(r => { all[r.week_start] = true; });
+  const list = Object.keys(all).sort().reverse();
+  if (!list.length) list.push(FALLBACK_WEEK);
+  sel.innerHTML = list.map(w => '<option value="' + w + '"' + (w === state.selectedWeek ? ' selected' : '') + '>Semana del ' + fmtWeek(w) + '</option>').join('');
+  if (list.indexOf(state.selectedWeek) === -1) state.selectedWeek = list[0];
+  sel.value = state.selectedWeek;
+}
+
+async function loadWeekData(){
+  if (!LIVE) return;
+  const w = state.selectedWeek;
+  try {
+    state.salesRows = await sb('weekly_sales', { select: '*', query: { week_start: 'eq.' + w }, order: 'total.desc', limit: 1000 }) || [];
+  } catch (e) { state.salesRows = []; }
+  try {
+    const imp = await sb('ventas_pos_import', { select: 'clave,descripcion', query: { week_start: 'eq.' + w }, limit: 1000 }) || [];
+    state.salesDesc = {}; imp.forEach(r => { state.salesDesc[String(r.clave)] = r.descripcion; });
+  } catch (e) { state.salesDesc = {}; }
+  // Inventario: la semana seleccionada si tiene conteos; si no, la última con conteos.
+  const invW = pickInvWeek('barra');
+  state.invWeekBarra = invW;
+  try { state.invBarra = await sb('inventory_weekly', { select: '*', query: { week_start: 'eq.' + invW }, order: 'producto.asc', limit: 1000 }) || []; }
+  catch (e) { state.invBarra = []; }
+  const invWC = pickInvWeek('cocina');
+  state.invWeekCocina = invWC;
+  try { state.invCocina = await sb('inventory_cocina', { select: '*', query: { week_start: 'eq.' + invWC }, order: 'producto.asc', limit: 1000 }) || []; }
+  catch (e) { state.invCocina = []; }
+}
+function pickInvWeek(area){
+  const rows = state.invResumen.filter(r => r.area === area);
+  if (!rows.length) return FALLBACK_INV_WEEK;
+  const weeks = rows.map(r => r.week_start).sort().reverse();
+  if (weeks.indexOf(state.selectedWeek) !== -1) return state.selectedWeek;
+  return weeks[0];
+}
+function invSummary(area){
+  const row = state.invResumen.find(r => r.area === area && r.week_start === (area === 'barra' ? state.invWeekBarra : state.invWeekCocina));
+  if (row) return row;
+  const rows = (area === 'barra' ? state.invBarra : state.invCocina);
+  return { week_start: area === 'barra' ? state.invWeekBarra : state.invWeekCocina, area: area,
+    productos: rows.length,
+    valor_total: rows.reduce((a, r) => a + num(r.valor_total), 0),
+    perdido_pesos: rows.reduce((a, r) => a + num(r.perdido_pesos), 0),
+    sobrante_pesos: rows.reduce((a, r) => a + num(r.sobrante_pesos), 0) };
+}
+
+/* ---------------- animación de contadores ---------------- */
+function animateMoney(el, target){
+  if (!el || target == null || isNaN(Number(target))) { if (el) el.textContent = fmtMoney(target); return; }
+  const start = performance.now(), dur = 700, from = 0, to = Number(target);
+  function tick(t){
+    const p = Math.min(1, (t - start) / dur), e = 1 - Math.pow(1 - p, 3);
+    el.textContent = fmtMoney(from + (to - from) * e);
+    if (p < 1) requestAnimationFrame(tick);
+  }
+  requestAnimationFrame(tick);
+}
+function animateNum(el, target){
+  if (!el || target == null || isNaN(Number(target))) { if (el) el.textContent = fmtNum(target); return; }
+  const start = performance.now(), dur = 700, to = Number(target);
+  function tick(t){
+    const p = Math.min(1, (t - start) / dur), e = 1 - Math.pow(1 - p, 3);
+    el.textContent = fmtNum(to * e);
+    if (p < 1) requestAnimationFrame(tick);
+  }
+  requestAnimationFrame(tick);
+}
+
+/* ---------------- PANEL EJECUTIVO ---------------- */
+function weekRow(week){
+  return state.weeks.find(w => w.week_start === week) || null;
+}
+function renderPanel(){
+  const row = weekRow(state.selectedWeek);
+  $('panelSubtitle').innerHTML = 'Semana del ' + fmtWeek(state.selectedWeek) + ' · Ventas de barra (Soft Restaurant) · ' +
+    (LIVE ? '<span class="badge green" id="liveBadge">en vivo · Supabase</span>' : '<span class="badge grey" id="liveBadge">últimos datos conocidos</span>');
+  if (!row) {
+    // Semana sin ventas cargadas: vaciar KPIs y mostrar estado vacío.
+    ['kVentaNeta','kCosto','kMargen'].forEach(id => { $(id).textContent = '—'; });
+    ['kUnidades','kConCosto'].forEach(id => { $(id).textContent = '—'; });
+    $('kPpu').textContent = '—';
+    $('kVentaNetaSub').textContent = 'Sin ventas cargadas esta semana';
+    $('kCostoSub').textContent = '—'; $('kMargenSub').textContent = '—';
+    $('kUnidadesSub').textContent = '—'; $('kConCostoSub').textContent = '—';
+    $('compareBox').innerHTML = '<div class="empty">Esta semana aún no tiene ventas cargadas.<br>Sube el reporte de Soft Restaurant en <b>Captura semanal</b>.</div>';
+    $('groupBox').innerHTML = '<div class="empty">Sin datos de ventas para esta semana.</div>';
+    $('topTable').querySelector('tbody').innerHTML = '<tr><td colspan="7" class="muted">Sin datos de ventas para esta semana.</td></tr>';
+    $('donutSvg').innerHTML = ''; $('donutLegend').innerHTML = '<span class="muted">Sin datos.</span>';
+    $('noCostBox').innerHTML = '<div class="empty">Sin datos.</div>';
+    renderTrend();
+    renderAlerts();
+    return;
+  }
+  animateMoney($('kVentaNeta'), row.venta_neta);
+  $('kVentaNetaSub').textContent = 'con IVA ' + fmtMoney(row.venta_con_iva) + ' · IVA 8%';
+  animateMoney($('kCosto'), row.costo_teorico);
+  $('kCostoSub').textContent = (row.venta_neta ? (row.costo_teorico / row.venta_neta * 100).toFixed(1).replace('.', ',') : '—') + '% de la venta neta';
+  animateMoney($('kMargen'), row.margen);
+  $('kMargenSub').textContent = fmtPct(row.margen_pct) + ' sobre lo costeado';
+  animateNum($('kUnidades'), row.unidades);
+  $('kUnidadesSub').textContent = fmtNum(row.productos) + ' productos con venta';
+  $('kPpu').textContent = row.unidades ? fmtMoney(row.venta_neta / row.unidades) : '—';
+  const withCost = state.salesRows.filter(r => r.unit_cost != null).length;
+  const totalRows = state.salesRows.length || row.productos;
+  $('kConCosto').textContent = withCost + ' / ' + totalRows;
+  $('kConCostoSub').textContent = (row.venta_neta_cubierta && row.venta_neta ? (row.venta_neta_cubierta / row.venta_neta * 100).toFixed(1).replace('.', ',') : '—') + '% de la venta neta cubierta';
+  renderCompare(row);
+  renderTrend();
+  renderGroups();
+  renderDonut(row);
+  renderTop();
+  renderAlerts();
+  renderNoCost();
+}
+function renderCompare(row){
+  const box = $('compareBox');
+  const idx = state.weeks.findIndex(w => w.week_start === row.week_start);
+  const prev = idx >= 0 ? state.weeks[idx + 1] : null; // weeks vienen desc
+  if (!prev) {
+    box.innerHTML = '<div class="empty">Aún no hay una semana anterior para comparar.<br>Cuando se suba la siguiente semana, aquí verás la diferencia en $ y %.</div>';
+    $('compareSub').textContent = 'Venta neta, margen y unidades, en $ y %.';
+    return;
+  }
+  $('compareSub').textContent = 'Contra la semana del ' + fmtWeek(prev.week_start) + '.';
+  box.innerHTML =
+    '<div class="bar-row"><span class="bar-label">Venta neta</span><span class="bar-val">' + deltaHtml(row.venta_neta, prev.venta_neta) + '</span></div>' +
+    '<div class="bar-row"><span class="bar-label">Margen bruto</span><span class="bar-val">' + deltaHtml(row.margen, prev.margen) + '</span></div>' +
+    '<div class="bar-row"><span class="bar-label">Unidades</span><span class="bar-val">' + deltaHtml(row.unidades, prev.unidades) + '</span></div>' +
+    '<div class="bar-row"><span class="bar-label">Margen %</span><span class="bar-val">' + deltaHtml(row.margen_pct * 100, prev.margen_pct * 100, function(v){ return v.toFixed(1).replace('.', ',') + ' pp'; }) + '</span></div>';
+}
+function renderTrend(){
+  const box = $('trendBox');
+  if (!state.weeks.length) { box.innerHTML = '<div class="empty">Aún no hay semanas cargadas.</div>'; return; }
+  const asc = state.weeks.slice().sort((a, b) => String(a.week_start).localeCompare(String(b.week_start)));
+  const max = Math.max.apply(null, asc.map(w => Number(w.venta_neta) || 0)) || 1;
+  box.innerHTML = '<div class="trend">' + asc.map(w => {
+    const h = Math.max(4, Math.round(Number(w.venta_neta) / max * 110));
+    return '<div class="trend-col"><div class="trend-val">' + fmtMoney(w.venta_neta) + '</div>' +
+      '<div class="trend-bar" style="height:' + h + 'px"></div>' +
+      '<div class="trend-lab">' + fmtWeek(w.week_start) + '</div></div>';
+  }).join('') + '</div>' +
+  (asc.length === 1 ? '<p class="small muted" style="margin-top:10px">Solo hay una semana cargada. La tendencia se dibuja sola cuando se suba la segunda.</p>' : '');
+}
+function renderGroups(){
+  const box = $('groupBox');
+  const agg = {};
+  state.salesRows.forEach(r => {
+    const p = state.productsByClave[r.product_clave];
+    const g = p && p.grupo ? p.grupo : 'Sin grupo';
+    agg[g] = (agg[g] || 0) + num(r.total) / 1.08;
+  });
+  const entries = Object.keys(agg).map(k => [k, agg[k]]).sort((a, b) => b[1] - a[1]);
+  if (!entries.length) { box.innerHTML = '<div class="empty">Sin datos de ventas para esta semana.</div>'; return; }
+  const max = entries[0][1] || 1;
+  box.innerHTML = entries.map(e =>
+    '<div class="bar-row"><span class="bar-label">' + esc(e[0]) + '</span>' +
+    '<div class="bar-track"><div class="bar-fill" style="width:' + Math.round(e[1] / max * 100) + '%"></div></div>' +
+    '<span class="bar-val">' + fmtMoney(e[1]) + '</span></div>'
+  ).join('');
+}
+function renderDonut(row){
+  const svg = $('donutSvg'), legend = $('donutLegend');
+  const neta = Number(row.venta_neta_cubierta) || 0, margen = Number(row.margen) || 0, costo = Number(row.costo_teorico) || 0;
+  if (!neta) { svg.innerHTML = ''; legend.innerHTML = '<span class="muted">Sin datos.</span>'; return; }
+  const pct = margen / neta;
+  const C = 2 * Math.PI * 52;
+  const dashM = (pct * C).toFixed(1);
+  svg.innerHTML =
+    '<circle cx="66" cy="66" r="52" fill="none" stroke="var(--border)" stroke-width="18"/>' +
+    '<circle cx="66" cy="66" r="52" fill="none" stroke="var(--accent)" stroke-width="18" stroke-linecap="round" ' +
+    'stroke-dasharray="' + dashM + ' ' + (C - dashM).toFixed(1) + '" transform="rotate(-90 66 66)"/>' +
+    '<text x="66" y="62" text-anchor="middle" font-size="19" font-weight="800" fill="var(--text)">' + fmtPct(row.margen_pct) + '</text>' +
+    '<text x="66" y="82" text-anchor="middle" font-size="11" fill="var(--muted)">margen</text>';
+  legend.innerHTML =
+    '<span><span class="sw" style="background:var(--accent)"></span>Margen bruto · <b>' + fmtMoney(margen) + '</b> (' + fmtPct(row.margen_pct) + ')</span>' +
+    '<span><span class="sw" style="background:var(--border)"></span>Costo teórico · <b>' + fmtMoney(costo) + '</b> (' + (neta ? ((costo / neta) * 100).toFixed(1).replace('.', ',') : '—') + ' %)</span>' +
+    '<span class="muted">Venta neta costeada: ' + fmtMoney(neta) + '</span>';
+}
+function renderTop(){
+  const tb = $('topTable').querySelector('tbody');
+  const rows = state.salesRows.slice().sort((a, b) => num(b.total) - num(a.total)).slice(0, 10);
+  if (!rows.length) { tb.innerHTML = '<tr><td colspan="7" class="muted">Sin datos de ventas para esta semana.</td></tr>'; return; }
+  tb.innerHTML = rows.map((r, i) => {
+    const p = state.productsByClave[r.product_clave];
+    const name = p ? p.nombre : (state.salesDesc[String(r.pos_clave)] || ('Clave POS ' + (r.pos_clave || '—')));
+    const neta = num(r.total) / 1.08, costo = num(r.qty) * num(r.unit_cost);
+    return '<tr><td class="num">' + (i + 1) + '</td><td>' + esc(name) + '</td><td class="num">' + fmtNum(r.qty) + '</td>' +
+      '<td class="num money">' + fmtMoney(r.total) + '</td><td class="num money">' + fmtMoney(neta) + '</td>' +
+      '<td class="num money">' + (r.unit_cost == null ? '—' : fmtMoney(costo)) + '</td>' +
+      '<td class="num money">' + (r.unit_cost == null ? '—' : fmtMoney(neta - costo)) + '</td></tr>';
+  }).join('');
+}
+function renderAlerts(){
+  const box = $('alertBox');
+  const rows = state.invBarra.filter(r => num(r.perdido_pesos) > 0).sort((a, b) => num(b.perdido_pesos) - num(a.perdido_pesos));
+  const sum = invSummary('barra');
+  $('alertSub').textContent = 'Faltantes de la semana del ' + fmtWeek(state.invWeekBarra) + ' · Perdido ' + fmtMoney(sum.perdido_pesos) + ' · Sobrante ' + fmtMoney(sum.sobrante_pesos) + '.';
+  if (!state.invBarra.length) { box.innerHTML = '<div class="empty">Sin conteos de inventario cargados.</div>'; return; }
+  if (!rows.length) { box.innerHTML = '<div class="notice ok" style="margin:0">Sin faltantes esta semana. Sobrante total: <b>' + fmtMoney(sum.sobrante_pesos) + '</b>.</div>'; return; }
+  box.innerHTML = rows.slice(0, 5).map(r =>
+    '<div class="bar-row"><span class="bar-label">' + esc(r.producto) + ' <span class="muted">(' + fmtNum(r.perdido) + ' ' + esc(r.unidad || 'uds') + ')</span></span>' +
+    '<span class="bar-val" style="color:var(--danger)">' + fmtMoney(r.perdido_pesos) + '</span></div>'
+  ).join('') +
+  '<p class="small muted" style="margin-top:10px">El sobrante también vale dinero: <b>' + fmtMoney(sum.sobrante_pesos) + '</b> esta semana, más que el faltante. Revisa los sobrantes grandes: pueden ser errores de captura o compras no registradas.</p>';
+}
+function renderNoCost(){
+  const box = $('noCostBox');
+  const rows = state.salesRows.filter(r => r.unit_cost == null);
+  if (!state.salesRows.length) { box.innerHTML = '<div class="empty">Sin datos.</div>'; return; }
+  if (!rows.length) { box.innerHTML = '<div class="notice ok" style="margin:0">Todos los productos vendidos tienen costo.</div>'; return; }
+  box.innerHTML = rows.map(r => {
+    const name = state.salesDesc[String(r.pos_clave)] || ('Clave POS ' + (r.pos_clave || '—'));
+    return '<div class="bar-row"><span class="bar-label">' + esc(name) + '</span><span class="bar-val">' + fmtMoney(r.total) + ' con IVA</span></div>';
+  }).join('') + '<p class="small muted" style="margin-top:10px">Pide el precio al proveedor para poder costearlos.</p>';
+}
+
+/* ---------------- INVENTARIO ---------------- */
+function invRowHtml(r){
+  const lost = num(r.perdido_pesos) > 0, sur = num(r.sobrante_pesos) > 0;
+  const cls = lost ? ' class="loss-row"' : (sur ? ' class="surplus-row"' : '');
+  return '<tr' + cls + '><td>' + esc(r.producto) + (r.costo == null ? ' <span class="badge gold">sin costo</span>' : '') + '</td>' +
+    '<td>' + esc(r.seccion || '—') + '</td><td>' + esc(r.unidad || '—') + '</td>' +
+    '<td class="num">' + fmtNum(r.total) + '</td><td class="num money">' + fmtMoney(r.costo) + '</td>' +
+    '<td class="num money">' + fmtMoney(r.valor_total) + '</td>' +
+    '<td class="num">' + fmtNum(r.perdido) + '</td><td class="num money">' + fmtMoney(r.perdido_pesos) + '</td>' +
+    '<td class="num">' + fmtNum(r.sobrante) + '</td><td class="num money">' + fmtMoney(r.sobrante_pesos) + '</td>' +
+    '<td class="num">' + (r.pct_perdido == null ? '—' : (Number(r.pct_perdido) * 100).toFixed(1).replace('.', ',') + ' %') + '</td></tr>';
+}
+function renderInventory(area){
+  const isBarra = area === 'barra';
+  const rows = isBarra ? state.invBarra : state.invCocina;
+  const sum = invSummary(area);
+  const week = isBarra ? state.invWeekBarra : state.invWeekCocina;
+  const q = ($(isBarra ? 'barraSearch' : 'cocinaSearch').value || '').toLowerCase();
+  const filtered = rows.filter(r => !q || String(r.producto || '').toLowerCase().indexOf(q) !== -1 || String(r.seccion || '').toLowerCase().indexOf(q) !== -1);
+  const pfx = isBarra ? 'b' : 'c';
+  $(pfx + 'Valor').textContent = fmtMoney(sum.valor_total);
+  $(pfx + 'Perdido').textContent = fmtMoney(sum.perdido_pesos);
+  $(pfx + 'Sobrante').textContent = fmtMoney(sum.sobrante_pesos);
+  const lostCount = rows.filter(r => num(r.perdido_pesos) > 0).length;
+  const surCount = rows.filter(r => num(r.sobrante_pesos) > 0).length;
+  $(pfx + 'ValorSub').textContent = fmtNum(sum.productos) + ' productos en inventario · semana del ' + fmtWeek(week);
+  $(pfx + 'PerdidoSub').textContent = lostCount + ' productos con faltante';
+  $(isBarra ? 'barraSub' : 'cocinaSub').textContent = 'Semana del ' + fmtWeek(week) +
+    (week !== state.selectedWeek ? ' · mostrando la última semana con conteos (la seleccionada aún no tiene inventario)' : '') +
+    (isBarra ? ' · 87 productos · conteo en onzas para licores.' : ' · Abarrotes, químicos, refrescos, fruta y verdura, desechables.');
+  $(isBarra ? 'barraCount' : 'cocinaCount').textContent = filtered.length + ' de ' + rows.length + ' productos';
+  const tb = $(isBarra ? 'barraTable' : 'cocinaTable').querySelector('tbody');
+  if (!rows.length) { tb.innerHTML = '<tr><td colspan="11" class="muted">Sin conteos de inventario cargados para esta semana.</td></tr>'; return; }
+  if (!filtered.length) { tb.innerHTML = '<tr><td colspan="11" class="muted">Nada coincide con la búsqueda.</td></tr>'; return; }
+  // Agrupar por sección, con encabezado por sección.
+  let html = '', lastSection = null;
+  filtered.forEach(r => {
+    const sec = r.seccion || 'Sin sección';
+    if (sec !== lastSection) { html += '<tr class="section-row"><td colspan="11">' + esc(sec) + '</td></tr>'; lastSection = sec; }
+    html += invRowHtml(r);
+  });
+  tb.innerHTML = html;
+  // Sin conteos (plantilla vacía): avisar.
+  if (rows.length && rows.every(r => r.valor_total == null && r.total == null)) {
+    tb.innerHTML = '<tr><td colspan="11"><div class="empty">Plantilla vacía: estos productos aún no tienen conteos esta semana.<br>Captúralos en <b>Captura semanal</b> o sube el CSV de la semana.</div></td></tr>';
+  }
+}
+
+/* ---------------- CAPTURA ---------------- */
+function fillProductSelect(){
+  const sel = $('fProduct');
+  sel.innerHTML = '<option value="">— Elige un producto —</option>' + state.products.map(p =>
+    '<option value="' + esc(p.clave) + '">' + esc(p.nombre) + ' · $' + fmtNum(p.precio_pos) + '</option>').join('');
+}
+function updateSalePreview(){
+  const p = state.productsByClave[$('fProduct').value];
+  const qty = num($('fQty').value, 1), price = num($('fPrice').value), disc = num($('fDiscount').value);
+  const courtesy = $('fCourtesy').checked;
+  if (!p) { $('salePreview').textContent = ''; return; }
+  const total = courtesy ? 0 : Math.max(0, qty * price - disc);
+  $('salePreview').textContent = 'Total: ' + fmtMoney(total) + (courtesy ? ' (cortesía)' : '') + ' · Costo: ' + fmtMoney(qty * num(p.costo_unitario)) + ' · Margen: ' + fmtMoney(total / 1.08 - qty * num(p.costo_unitario));
+}
+async function submitSale(e){
+  e.preventDefault();
+  if (!LIVE) { $('saleMsg').className = 'form-msg err'; $('saleMsg').textContent = 'Sin conexión a Supabase: configura las variables en Vercel primero.'; return; }
+  const btn = $('saleSubmit'); btn.disabled = true;
+  const p = state.productsByClave[$('fProduct').value];
+  const qty = num($('fQty').value, 1), price = num($('fPrice').value), disc = num($('fDiscount').value);
+  const courtesy = $('fCourtesy').checked;
+  const total = courtesy ? 0 : Math.max(0, qty * price - disc);
+  const row = { week_start: $('fWeek').value, shift: $('fShift').value.trim(), waiter: $('fWaiter').value.trim(),
+    product_clave: p.clave, pos_clave: null, qty: qty, unit_price: price, unit_cost: p.costo_unitario,
+    total: total, is_courtesy: courtesy, discount: disc, source: 'manual' };
+  try {
+    await sb('weekly_sales', { method: 'POST', body: row, prefer: 'return=representation' });
+    $('saleMsg').className = 'form-msg ok';
+    $('saleMsg').textContent = 'Guardado: ' + qty + ' × ' + p.nombre + ' (' + $('fWaiter').value.trim() + ', ' + $('fShift').value.trim() + ') · Total ' + fmtMoney(total) + '.';
+    $('fQty').value = '1'; $('fDiscount').value = '0'; $('fCourtesy').checked = false;
+    updateSalePreview();
+    await refreshManualTable();
+    if ($('fWeek').value === state.selectedWeek) { await loadWeekData(); renderAll(); }
+  } catch (err) {
+    $('saleMsg').className = 'form-msg err';
+    $('saleMsg').textContent = err.status === 409 ? 'Esa venta ya existe para esta semana (duplicado).' : 'No se pudo guardar: ' + err.message + (err.data && err.data.message ? ' · ' + err.data.message : '');
+  } finally { btn.disabled = false; }
+}
+async function refreshManualTable(){
+  const tb = $('manualTable').querySelector('tbody');
+  if (!LIVE) { tb.innerHTML = '<tr><td colspan="8" class="muted">Sin conexión a Supabase.</td></tr>'; return; }
+  try {
+    const rows = await sb('weekly_sales', { select: '*', query: { week_start: 'eq.' + state.selectedWeek, source: 'eq.manual' }, order: 'created_at.desc', limit: 100 }) || [];
+    $('manualSub').textContent = 'Ventas registradas a mano en la semana del ' + fmtWeek(state.selectedWeek) + ' (' + rows.length + ').';
+    if (!rows.length) { tb.innerHTML = '<tr><td colspan="8" class="muted">Aún no hay capturas manuales esta semana.</td></tr>'; return; }
+    tb.innerHTML = rows.map(r => {
+      const p = state.productsByClave[r.product_clave];
+      return '<tr><td>' + esc(r.waiter || '—') + '</td><td>' + esc(r.shift || '—') + '</td><td>' + esc(p ? p.nombre : '—') + '</td>' +
+        '<td class="num">' + fmtNum(r.qty) + '</td><td class="num money">' + fmtMoney(r.unit_price) + '</td>' +
+        '<td class="num money">' + fmtMoney(r.discount) + '</td><td class="num money">' + fmtMoney(r.total) + '</td>' +
+        '<td>' + (r.is_courtesy ? '<span class="badge gold">Cortesía</span>' : '—') + '</td></tr>';
+    }).join('');
+  } catch (e) { tb.innerHTML = '<tr><td colspan="8" class="muted">No se pudieron cargar las capturas: ' + esc(e.message) + '</td></tr>'; }
+}
+function invDerived(v){
+  const total = num(v.almacen) + num(v.display) + num(v.barra);
+  const base = num(v.inicial) + num(v.compras) - num(v.venta);
+  const diferencia = total - base;
+  const perdido = Math.max(0, -diferencia), sobrante = Math.max(0, diferencia);
+  const costo = num(v.costo);
+  return { total: total, diferencia: diferencia, perdido: perdido, pedido: 0, sobrante: sobrante,
+    valor_total: total * costo, perdido_pesos: perdido * costo, sobrante_pesos: sobrante * costo,
+    pct_perdido: (num(v.inicial) + num(v.compras)) > 0 ? perdido / (num(v.inicial) + num(v.compras)) : 0,
+    pct_sobrante: (num(v.inicial) + num(v.compras)) > 0 ? sobrante / (num(v.inicial) + num(v.compras)) : 0 };
+}
+async function submitInv(e){
+  e.preventDefault();
+  if (!LIVE) { $('invMsg').className = 'form-msg err'; $('invMsg').textContent = 'Sin conexión a Supabase: configura las variables en Vercel primero.'; return; }
+  const btn = $('invSubmit'); btn.disabled = true;
+  const area = $('iArea').value;
+  const v = { inicial: num($('iInicial').value), compras: num($('iCompras').value), almacen: num($('iAlmacen').value),
+    display: num($('iDisplay').value), barra: num($('iBarra').value), venta: num($('iVenta').value),
+    costo: num($('iCost').value), minimo: num($('iMin').value) };
+  const d = invDerived(v);
+  const row = { week_start: $('iWeek').value, seccion: $('iSection').value.trim() || null,
+    producto: $('iProduct').value.trim(), unidad: $('iUnit').value.trim() || null,
+    inicial: v.inicial, compras: v.compras, almacen: v.almacen, display: v.display, barra: v.barra,
+    venta: v.venta, total: d.total, diferencia: d.diferencia, minimo: v.minimo, perdido: d.perdido,
+    pedido: d.pedido, sobrante: d.sobrante, costo: v.costo, valor_total: d.valor_total,
+    perdido_pesos: d.perdido_pesos, pct_perdido: d.pct_perdido, sobrante_pesos: d.sobrante_pesos, pct_sobrante: d.pct_sobrante };
+  try {
+    await sb(area === 'barra' ? 'inventory_weekly' : 'inventory_cocina',
+      { method: 'POST', body: row, prefer: 'resolution=merge-duplicates,return=representation',
+        query: { on_conflict: 'week_start,producto' } });
+    $('invMsg').className = 'form-msg ok';
+    $('invMsg').textContent = 'Guardado: ' + row.producto + ' · Total ' + fmtNum(d.total) + ' · Perdido ' + fmtMoney(d.perdido_pesos) + ' · Sobrante ' + fmtMoney(d.sobrante_pesos) + '.';
+    await loadWeekData(); renderAll();
+  } catch (err) {
+    $('invMsg').className = 'form-msg err';
+    $('invMsg').textContent = 'No se pudo guardar: ' + err.message + (err.data && err.data.message ? ' · ' + err.data.message : '');
+  } finally { btn.disabled = false; }
+}
+
+/* ---------------- CSV ---------------- */
+function parseCSV(text){
+  // Parser CSV con comillas, comas dentro de comillas y saltos \r\n.
+  const rows = []; let cur = [], inQ = false, field = '';
+  const s = String(text).replace(/^\uFEFF/, '');
+  for (let i = 0; i < s.length; i++) {
+    const c = s[i];
+    if (inQ) {
+      if (c === '"') { if (s[i + 1] === '"') { field += '"'; i++; } else inQ = false; }
+      else field += c;
+    } else if (c === '"') inQ = true;
+    else if (c === ',') { cur.push(field); field = ''; }
+    else if (c === '\n' || c === '\r') {
+      if (c === '\r' && s[i + 1] === '\n') i++;
+      cur.push(field); field = ''; rows.push(cur); cur = [];
+    } else field += c;
+  }
+  if (field !== '' || cur.length) { cur.push(field); rows.push(cur); }
+  return rows.filter(r => r.some(c => String(c).trim() !== ''));
+}
+function findHeaderRow(rows, wanted){
+  // El CSV puede traer filas de título antes del encabezado: buscar la
+  // primera fila que contenga la columna buscada.
+  for (let i = 0; i < rows.length; i++) {
+    const norm = rows[i].map(c => String(c).trim().toLowerCase().replace(/\s+/g, '_'));
+    if (norm.indexOf(wanted) !== -1) return i;
+  }
+  return -1;
+}
+function headerIndex(header){
+  const map = {};
+  header.forEach((h, i) => { map[String(h).trim().toLowerCase().replace(/\s+/g, '_')] = i; });
+  return map;
+}
+function pick(row, idx, names){
+  for (const n of names) { const i = idx[n]; if (i != null && row[i] != null && String(row[i]).trim() !== '') return row[i]; }
+  return null;
+}
+async function uploadPOS(){
+  const msg = $('posMsg');
+  if (!LIVE) { msg.className = 'form-msg err'; msg.textContent = 'Sin conexión a Supabase: configura las variables en Vercel primero.'; return; }
+  const file = $('posFile').files[0];
+  const week = $('posWeek').value;
+  if (!file) { msg.className = 'form-msg err'; msg.textContent = 'Elige el archivo CSV del reporte primero.'; return; }
+  if (!week) { msg.className = 'form-msg err'; msg.textContent = 'Elige la semana (lunes) del reporte.'; return; }
+  const btn = $('posUploadBtn'); btn.disabled = true;
+  msg.className = 'form-msg'; msg.textContent = 'Leyendo archivo…';
+  try {
+    const rows = parseCSV(await file.text());
+    const headerAt = findHeaderRow(rows, 'clave');
+    if (headerAt === -1) throw new Error('El CSV no trae la columna CLAVE del reporte.');
+    const idx = headerIndex(rows[headerAt]);
+    if (idx.clave == null || idx.cantidad == null || idx.venta_total == null) {
+      throw new Error('El CSV no trae las columnas del reporte (CLAVE, CANTIDAD, VENTA_TOTAL).');
+    }
+    const staging = [], sales = [];
+    let noCost = [];
+    for (let i = headerAt + 1; i < rows.length; i++) {
+      const r = rows[i];
+      const clave = String(pick(r, idx, ['clave']) || '').trim();
+      if (!clave) continue;
+      staging.push({ week_start: week, clave: clave,
+        descripcion: pick(r, idx, ['descripcion']) || null,
+        grupo: pick(r, idx, ['grupo']) || null,
+        precio: num(pick(r, idx, ['precio'])), cantidad: num(pick(r, idx, ['cantidad'])),
+        venta_total: num(pick(r, idx, ['venta_total'])), costo: num(pick(r, idx, ['costo'])),
+        costo_total: num(pick(r, idx, ['costo_total'])), venta_costo: num(pick(r, idx, ['venta_costo'])),
+        precio_de_venta: num(pick(r, idx, ['precio_de_venta'])), precio_de_catalogo: num(pick(r, idx, ['precio_de_catalogo'])),
+        venta_total_precio_catalogo: num(pick(r, idx, ['venta_total_precio_catalogo'])), tasa_iva: num(pick(r, idx, ['tasa_iva'])) });
+      const map = POS_MAP[clave];
+      const qty = num(pick(r, idx, ['cantidad'])), price = num(pick(r, idx, ['precio'])), total = num(pick(r, idx, ['venta_total']));
+      if (map) {
+        sales.push({ week_start: week, product_clave: map[0], pos_clave: clave, qty: qty, unit_price: price,
+          unit_cost: map[1], total: total, source: 'soft_restaurant' });
+        if (map[1] == null) noCost.push(pick(r, idx, ['descripcion']) || clave);
+      } else {
+        sales.push({ week_start: week, product_clave: null, pos_clave: clave, qty: qty, unit_price: price,
+          unit_cost: null, total: total, source: 'soft_restaurant' });
+        noCost.push(pick(r, idx, ['descripcion']) || clave);
+      }
+    }
+    msg.textContent = 'Subiendo ' + staging.length + ' filas al staging…';
+    await sbChunks('ventas_pos_import', staging);
+    msg.textContent = 'Generando ventas con costo…';
+    await sbChunks('weekly_sales', sales);
+    msg.className = 'form-msg ok';
+    msg.textContent = 'Listo: ' + staging.length + ' productos subidos para la semana del ' + fmtWeek(week) + ' · ' +
+      (staging.length - noCost.length) + ' con costo · ' + noCost.length + ' sin costo' +
+      (noCost.length ? ' (' + noCost.join(', ') + ')' : '') + '. Actualiza el panel para verlos.';
+    await loadAll();
+  } catch (err) {
+    msg.className = 'form-msg err';
+    msg.textContent = err.status === 409
+      ? 'Esa semana ya está cargada (la base rechaza duplicados). Para corregirla, bórrala primero en Supabase → Table Editor.'
+      : 'No se pudo subir: ' + err.message + (err.data && err.data.message ? ' · ' + err.data.message : '');
+  } finally { btn.disabled = false; }
+}
+async function uploadInvCSV(){
+  const msg = $('csvMsg');
+  if (!LIVE) { msg.className = 'form-msg err'; msg.textContent = 'Sin conexión a Supabase: configura las variables en Vercel primero.'; return; }
+  const file = $('csvFile').files[0];
+  const area = $('csvArea').value, week = $('csvWeek').value;
+  if (!file) { msg.className = 'form-msg err'; msg.textContent = 'Elige el archivo CSV del conteo primero.'; return; }
+  if (!week) { msg.className = 'form-msg err'; msg.textContent = 'Elige la semana (lunes) del conteo.'; return; }
+  const btn = $('csvUploadBtn'); btn.disabled = true;
+  msg.className = 'form-msg'; msg.textContent = 'Leyendo archivo…';
+  try {
+    const rows = parseCSV(await file.text());
+    const headerAt = findHeaderRow(rows, 'producto');
+    if (headerAt === -1) throw new Error('El CSV no trae la columna PRODUCTO.');
+    const idx = headerIndex(rows[headerAt]);
+    const out = [];
+    for (let i = headerAt + 1; i < rows.length; i++) {
+      const r = rows[i];
+      const producto = String(pick(r, idx, ['producto']) || '').trim();
+      if (!producto) continue;
+      const v = { inicial: num(pick(r, idx, ['inicial', 'inventario_inicial'])), compras: num(pick(r, idx, ['compras'])),
+        almacen: num(pick(r, idx, ['almacen', 'almacén'])), display: num(pick(r, idx, ['display'])),
+        barra: num(pick(r, idx, ['barra'])), venta: num(pick(r, idx, ['venta'])),
+        costo: num(pick(r, idx, ['costo', 'costo_unitario'])), minimo: num(pick(r, idx, ['minimo', 'mínimo'])) };
+      const d = invDerived(v);
+      out.push({ week_start: week, seccion: pick(r, idx, ['seccion', 'sección']) || null, producto: producto,
+        unidad: pick(r, idx, ['unidad']) || null, inicial: v.inicial, compras: v.compras, almacen: v.almacen,
+        display: v.display, barra: v.barra, venta: v.venta, total: d.total, diferencia: d.diferencia,
+        minimo: v.minimo, perdido: d.perdido, pedido: d.pedido, sobrante: d.sobrante, costo: v.costo,
+        valor_total: d.valor_total, perdido_pesos: d.perdido_pesos, pct_perdido: d.pct_perdido,
+        sobrante_pesos: d.sobrante_pesos, pct_sobrante: d.pct_sobrante });
+    }
+    const table = area === 'barra' ? 'inventory_weekly' : 'inventory_cocina';
+    for (let i = 0; i < out.length; i += 40) {
+      await sb(table, { method: 'POST', body: out.slice(i, i + 40), prefer: 'resolution=merge-duplicates,return=representation', query: { on_conflict: 'week_start,producto' } });
+    }
+    const perdido = out.reduce((a, r) => a + r.perdido_pesos, 0), sobrante = out.reduce((a, r) => a + r.sobrante_pesos, 0);
+    msg.className = 'form-msg ok';
+    msg.textContent = 'Listo: ' + out.length + ' productos subidos a ' + (area === 'barra' ? 'barra' : 'cocina') + ' para la semana del ' + fmtWeek(week) +
+      ' · Perdido ' + fmtMoney(perdido) + ' · Sobrante ' + fmtMoney(sobrante) + '.';
+    await loadAll();
+  } catch (err) {
+    msg.className = 'form-msg err';
+    msg.textContent = 'No se pudo subir: ' + err.message + (err.data && err.data.message ? ' · ' + err.data.message : '');
+  } finally { btn.disabled = false; }
+}
+
+/* ---------------- DOCUMENTOS ---------------- */
+function renderDocs(){
+  const box = $('docsList');
+  const FALLBACK_DOCS = [
+    { title: 'Manual de Capacitación para Meseros Nuevos', category: 'manual',
+      note: 'Corregido 24 nov 2026: precios de cantaritos a la carta de noviembre y dirección Calle Sol #840 Oriente.' },
+    { title: 'Guía Visual de Cocina — Estándares de Preparación', category: 'ficha_tecnica',
+      note: 'Gramajes y montaje de platillos de cocina, sin precios.' },
+  ];
+  const docs = (state.docs && state.docs.length) ? state.docs : FALLBACK_DOCS;
+  const catLabel = { manual: 'Manual', ficha_tecnica: 'Ficha técnica', menu: 'Menú' };
+  box.innerHTML = docs.map(d =>
+    '<div class="card doc-card"><div class="doc-ic">📄</div><div>' +
+    '<h3>' + esc(d.title) + '</h3>' +
+    '<p class="small muted" style="margin:4px 0 8px">' + esc(d.note || '') + '</p>' +
+    '<span class="badge ' + (d.category === 'manual' ? 'green' : 'blue') + '">' + esc(catLabel[d.category] || d.category || 'Documento') + '</span>' +
+    '</div></div>'
+  ).join('') +
+  '<p class="small muted">Los archivos (PDF / DOCX) se guardan en el repositorio de la empresa; esta lista muestra su título y su nota desde Supabase. Para agregar otro documento, insértalo en la tabla <b>documents</b> de Supabase.</p>';
+}
+
+/* ---------------- navegación y tema ---------------- */
+function showView(name){
+  document.querySelectorAll('.view').forEach(v => v.classList.toggle('active', v.id === 'view-' + name));
+  document.querySelectorAll('[data-view]').forEach(b => b.classList.toggle('active', b.getAttribute('data-view') === name));
+  if (name === 'inv-barra') renderInventory('barra');
+  if (name === 'inv-cocina') renderInventory('cocina');
+  if (name === 'captura') refreshManualTable();
+  if (name === 'docs') renderDocs();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+function renderAll(){
+  renderPanel();
+  renderInventory('barra');
+  renderInventory('cocina');
+  renderDocs();
+  fillProductSelect();
+  refreshManualTable();
+  const dl = $('invProducts');
+  const names = {};
+  state.invBarra.concat(state.invCocina).forEach(r => { names[r.producto] = true; });
+  dl.innerHTML = Object.keys(names).sort().map(n => '<option value="' + esc(n) + '">').join('');
+}
+function applyTheme(t){
+  document.documentElement.setAttribute('data-theme', t);
+  try { localStorage.setItem('cantaros-theme', t); } catch (e) {}
+  const dark = t === 'dark';
+  $('themeBtn').querySelector('span').textContent = dark ? '☀️ Tema claro' : '🌙 Tema oscuro';
+  $('themeIcon').textContent = dark ? '●' : '○';
+  $('themeBtnM').textContent = dark ? '☀️' : '🌙';
+}
+function initTheme(){
+  let t = 'light';
+  try { t = localStorage.getItem('cantaros-theme') || (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'); } catch (e) {}
+  applyTheme(t);
+}
+
+/* ---------------- arranque ---------------- */
+document.addEventListener('DOMContentLoaded', async () => {
+  initTheme();
+  const toggle = () => applyTheme(document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark');
+  $('themeBtn').addEventListener('click', toggle);
+  $('themeBtnM').addEventListener('click', toggle);
+  document.querySelectorAll('[data-view]').forEach(b => b.addEventListener('click', () => showView(b.getAttribute('data-view'))));
+  const monday = toISODate(mondayOf(new Date()));
+  ['fWeek', 'iWeek', 'posWeek', 'csvWeek'].forEach(id => { $(id).value = monday; });
+  $('weekSelect').addEventListener('change', async () => {
+    state.selectedWeek = $('weekSelect').value;
+    setStatus(null, 'Cargando semana…');
+    await loadWeekData();
+    renderAll();
+    setStatus(true, 'En vivo · Supabase');
+  });
+  $('refreshBtn').addEventListener('click', async () => { await loadAll(); });
+  $('fProduct').addEventListener('change', () => {
+    const p = state.productsByClave[$('fProduct').value];
+    if (p) $('fPrice').value = p.precio_pos;
+    updateSalePreview();
+  });
+  ['fQty', 'fPrice', 'fDiscount', 'fCourtesy'].forEach(id => $(id).addEventListener('input', updateSalePreview));
+  $('saleForm').addEventListener('submit', submitSale);
+  $('invForm').addEventListener('submit', submitInv);
+  $('posUploadBtn').addEventListener('click', uploadPOS);
+  $('csvUploadBtn').addEventListener('click', uploadInvCSV);
+  $('barraSearch').addEventListener('input', () => renderInventory('barra'));
+  $('cocinaSearch').addEventListener('input', () => renderInventory('cocina'));
+  await loadConfig();
+  await loadAll();
+  if (!LIVE) renderDocs(); // sin conexión: al menos mostrar los documentos conocidos
+});
+</script>
+</body>
+</html>
