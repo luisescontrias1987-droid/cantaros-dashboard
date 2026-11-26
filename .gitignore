@@ -1,0 +1,8 @@
+# Dependencias y salida de build (Vercel instala y construye solo)
+node_modules/
+dist/
+dist-ssr/
+
+# Locales
+*.local
+.DS_Store
