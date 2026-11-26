@@ -1,7 +1,50 @@
 // Piezas de UI compartidas: modales (confirmación y PIN), chips, títulos.
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X } from 'lucide-react';
+import { ChevronLeft, ChevronRight, X } from 'lucide-react';
+import { mondayOf, toISODate, weekLabel } from '../lib/utils.js';
+
+// Selector de semana independiente: anterior/siguiente (±7 días), etiqueta
+// con número de semana ("Semana 48 · 23–29 nov 2026") y salto a cualquier
+// semana con un input de fecha que ajusta al lunes. Sin límites.
+export function WeekStepper({ week, onChange, label }) {
+  const shift = (days) => {
+    const p = String(week).split('-').map(Number);
+    const d = new Date(p[0], p[1] - 1, p[2]);
+    d.setDate(d.getDate() + days);
+    onChange(toISODate(mondayOf(d)));
+  };
+  return (
+    <div className="flex flex-wrap items-center gap-2">
+      <button
+        type="button"
+        aria-label="Semana anterior"
+        onClick={() => shift(-7)}
+        className="rounded-full p-2 text-slate-500 hover:bg-white/60 dark:text-slate-300 dark:hover:bg-white/10 min-h-[44px] min-w-[44px] flex items-center justify-center"
+      >
+        <ChevronLeft size={20} />
+      </button>
+      <span className="font-bold text-slate-900 dark:text-white text-sm">{label || weekLabel(week)}</span>
+      <button
+        type="button"
+        aria-label="Semana siguiente"
+        onClick={() => shift(7)}
+        className="rounded-full p-2 text-slate-500 hover:bg-white/60 dark:text-slate-300 dark:hover:bg-white/10 min-h-[44px] min-w-[44px] flex items-center justify-center"
+      >
+        <ChevronRight size={20} />
+      </button>
+      <input
+        type="date"
+        value={week}
+        onChange={(e) => {
+          if (e.target.value) onChange(e.target.value);
+        }}
+        className="input w-auto"
+        aria-label="Ir a una semana"
+      />
+    </div>
+  );
+}
 
 export function Modal({ open, onClose, title, children, wide }) {
   return (

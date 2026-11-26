@@ -5,10 +5,10 @@ import {
   LayoutDashboard,
   ClipboardList,
   CalendarDays,
+  CalendarCheck,
   Boxes,
   MoreHorizontal,
   ChefHat,
-  Upload,
   FileText,
   X,
 } from 'lucide-react';
@@ -22,8 +22,8 @@ const MAIN = [
 
 const MORE = [
   { id: 'cocina', label: 'Inventario cocina', icon: ChefHat },
-  { id: 'subir-pos', label: 'Subir reporte POS', icon: Upload },
   { id: 'documentos', label: 'Documentos', icon: FileText },
+  { id: 'reservaciones', label: 'Reservaciones', icon: CalendarCheck },
 ];
 
 export default function MobileNav({ view, onNavigate }) {

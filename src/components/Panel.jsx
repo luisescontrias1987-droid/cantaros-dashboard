@@ -18,6 +18,7 @@ import {
 } from '../lib/period.js';
 import { groupNetAgg, groupTopAgg, productAgg, sortRows } from '../lib/aggregates.js';
 import KpiCard from './KpiCard.jsx';
+import PosUpload from './PosUpload.jsx';
 import { EmptyState, SectionTitle } from './ui.jsx';
 
 const DONUT_COLORS = ['#0891b2', '#2563eb', '#38bdf8', '#0ea5e9', '#22d3ee', '#14b8a6', '#6366f1', '#f59e0b', '#ef4444'];
@@ -109,8 +110,10 @@ export default function Panel({ query, onNavigate }) {
           <KpiCard index={5} icon={CheckCircle2} label="Productos con costo" value={withCost + ' / ' + rows.length} sub={rows.length - withCost > 0 ? (rows.length - withCost) + ' sin costo' : 'todos con costo'} />
         </div>
       ) : (
-        <EmptyState title="Sin ventas en este periodo" subtitle="Sube el reporte POS de Soft Restaurant en Captura para ver las cifras." />
+        <EmptyState title="Sin ventas en este periodo" subtitle="Sube el reporte POS de Soft Restaurant en la tarjeta de abajo para ver las cifras." />
       )}
+
+      <PosUpload />
 
       <div className="grid gap-4 lg:grid-cols-5 [&>*]:min-w-0">
         <motion.div className="glass-card rounded-3xl p-4 sm:p-5 lg:col-span-3" initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.1 }}>
