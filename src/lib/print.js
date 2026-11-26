@@ -1,5 +1,5 @@
 // Ventanas imprimibles (PDF vía window.print). Portado de vercel-app/index.html.
-import { AREAS, DIAS, MESES, fmtMoney, num, toISODate, weekDays, weekLabel, weekNum, weekRangeTitle } from './utils.js';
+import { AREAS, DIAS, MESES, fmtMoney, num, reservationsRangeTitle, toISODate, weekDays, weekLabel, weekNum, weekRangeTitle } from './utils.js';
 
 function openPrintWindow(html, onBlocked) {
   const win = window.open('', '_blank');
@@ -105,8 +105,8 @@ export function printReservationsPDF({ eventos, horariosWeek }, onBlocked) {
     })
     .join('');
   const html =
-    '<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><title>Reservaciones · ' +
-    weekLabel(horariosWeek) +
+    '<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><title>' +
+    reservationsRangeTitle(horariosWeek) +
     '</title><style>' +
     'body{font-family:-apple-system,"Segoe UI",Roboto,Arial,sans-serif;color:#1b2530;margin:24px}' +
     'h1{font-size:22px;margin:0 0 4px} p.sub{color:#667085;margin:0 0 18px}' +
@@ -114,8 +114,8 @@ export function printReservationsPDF({ eventos, horariosWeek }, onBlocked) {
     'th{background:#0d2e20;color:#fff} td.num{text-align:right}' +
     '@media print{body{margin:0} @page{size:landscape}}' +
     '</style></head><body>' +
-    '<h1>Reservaciones · ' +
-    weekLabel(horariosWeek) +
+    '<h1>' +
+    reservationsRangeTitle(horariosWeek) +
     '</h1>' +
     '<p class="sub">Cántaros, Cazos y Cantares · Calle Sol #840 Oriente, Ciudad Juárez</p>' +
     '<table><thead><tr><th>Día</th><th>Hora</th><th>Reservación</th><th>Tipo</th><th>Personas</th><th>Anticipo</th><th>Notas</th></tr></thead><tbody>' +

@@ -1,20 +1,19 @@
 // Horarios: tabla semanal por área, selector de turnos en formato 12h,
-// editar/eliminar personal con Deshacer (10 s), reservaciones con PDF y
-// exportación de la imagen del horario (canvas), Excel y PDF.
+// editar/eliminar personal con Deshacer (10 s) y exportación de la imagen
+// del horario (canvas), Excel y PDF.
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { motion } from 'framer-motion';
 import {
-  CalendarDays, Eye, FileSpreadsheet, FileText, MoreHorizontal,
+  Eye, FileSpreadsheet, FileText, MoreHorizontal,
   Plus, Trash2, Undo2, ChevronLeft, ChevronRight,
 } from 'lucide-react';
 import { useDashboard } from '../store/DashboardContext.jsx';
 import {
-  AREAS, DIAS, MESES, fmtMoney, num, shiftClass, toISODate, weekDays,
+  AREAS, DIAS, MESES, shiftClass, toISODate, weekDays,
   weekLabel, weekNum, weekRangeTitle,
 } from '../lib/utils.js';
 import { drawScheduleCanvas } from '../lib/canvas.js';
-import { printReservationsPDF, printSchedulePDF } from '../lib/print.js';
-import { Modal, ConfirmModal } from './ui.jsx';
+import { printSchedulePDF } from '../lib/print.js';
+import { Modal, ConfirmModal, WeekStepper } from './ui.jsx';
 
 function parseShift(v) {
   const out = { entryH: 11, entryM: '00', entryAP: 'AM', exitH: 8, exitM: '00', exitAP: 'PM', close: false, kind: 'range' };
@@ -146,7 +145,6 @@ export default function Horarios() {
   const [confirmDelete, setConfirmDelete] = useState(null);
   const [newName, setNewName] = useState('');
   const [newArea, setNewArea] = useState('MESEROS');
-  const [evForm, setEvForm] = useState({ dia: '', hora: '19:00', titulo: '', tipo: 'Posada', personas: '', anticipo: '', nota: '' });
   const [imgOpen, setImgOpen] = useState(false);
   const [imgUrl, setImgUrl] = useState('');
   const [status, setStatus] = useState('');
@@ -172,10 +170,6 @@ export default function Horarios() {
       setImgUrl(canvasRef.current.toDataURL('image/png'));
     }
   }, [imgOpen, d.staff, d.horarios, d.eventos, d.horariosWeek]);
-
-  useEffect(() => {
-    setEvForm((f) => ({ ...f, dia: toISODate(days[4]) }));
-  }, [days]);
 
   const saveShift = async (v) => {
     if (!picker) return;
@@ -210,36 +204,6 @@ export default function Horarios() {
     await d.submitStaff(newName.trim(), newArea);
     setNewName('');
     setStatus('Personal agregado: ' + newName.trim() + ' (' + newArea + ').');
-  };
-
-  const submitEvent = async (e) => {
-    e.preventDefault();
-    if (!evForm.dia || !evForm.titulo.trim()) {
-      setStatus('La reservación necesita día y nombre.');
-      return;
-    }
-    const fmtHour = (hhmm) => {
-      if (!hhmm) return '';
-      const p = String(hhmm).split(':');
-      let h = parseInt(p[0], 10);
-      const m = String(p[1] || '00').padStart(2, '0');
-      const ap = h >= 12 ? 'PM' : 'AM';
-      h = h % 12;
-      if (h === 0) h = 12;
-      return h + ':' + m + ' ' + ap;
-    };
-    await d.submitEvent({
-      week_start: d.horariosWeek,
-      dia: evForm.dia,
-      hora: fmtHour(evForm.hora),
-      titulo: evForm.titulo.trim(),
-      tipo_evento: evForm.tipo,
-      personas: evForm.personas ? Number(evForm.personas) : null,
-      anticipo: evForm.anticipo ? Number(evForm.anticipo) : null,
-      nota: evForm.nota.trim() || null,
-    });
-    setEvForm({ dia: toISODate(days[4]), hora: '19:00', titulo: '', tipo: 'Posada', personas: '', anticipo: '', nota: '' });
-    setStatus('Reservación agregada a la ' + weekLabel(d.horariosWeek) + '.');
   };
 
   const cellBtn = (s, day, v, compact) => {
@@ -280,18 +244,7 @@ export default function Horarios() {
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
-            <label className="flex items-center gap-2 text-sm font-semibold text-slate-600 dark:text-slate-300">
-              <CalendarDays size={16} />
-              <input
-                type="date"
-                value={d.horariosWeek}
-                onChange={async (e) => {
-                  if (e.target.value) await d.changeHorariosWeek(e.target.value);
-                }}
-                className="input w-auto"
-                aria-label="Semana de horarios"
-              />
-            </label>
+            <WeekStepper week={d.horariosWeek} onChange={(iso) => d.changeHorariosWeek(iso)} />
             <button type="button" className="btn-secondary" onClick={() => setImgOpen(true)}>
               <Eye size={16} /> Ver imagen
             </button>
@@ -384,6 +337,14 @@ export default function Horarios() {
                       <li key={s.id} className="flex items-center gap-2 rounded-2xl bg-white/60 dark:bg-white/5 border border-white/60 dark:border-white/10 px-2 py-1.5">
                         <span className="flex-1 min-w-0 font-semibold text-sm text-slate-800 dark:text-slate-100 truncate">{s.nombre}</span>
                         {cellBtn(s, day, shiftMap[s.id + '|' + toISODate(day)] || '', true)}
+                        <button
+                          type="button"
+                          aria-label={'Opciones de ' + s.nombre}
+                          onClick={() => openStaffModal(s)}
+                          className="rounded-full p-2 text-slate-500 hover:bg-white/60 dark:text-slate-300 dark:hover:bg-white/10 min-h-[44px] min-w-[44px] flex items-center justify-center shrink-0"
+                        >
+                          <MoreHorizontal size={18} />
+                        </button>
                       </li>
                     ))}
                   </ul>
@@ -464,112 +425,6 @@ export default function Horarios() {
           </button>
         </form>
         {status && <p className="mt-3 text-sm text-slate-600 dark:text-slate-300">{status}</p>}
-      </div>
-
-      <div className="glass-card rounded-3xl p-4 sm:p-5">
-        <div className="flex flex-wrap items-start justify-between gap-2">
-          <div>
-            <h3 className="text-lg font-bold text-slate-900 dark:text-white">Reservaciones</h3>
-            <p className="text-sm text-slate-500 dark:text-slate-400">Reservaciones de la {weekLabel(d.horariosWeek)} · vinculadas a esta semana.</p>
-          </div>
-          <button
-            type="button"
-            className="btn-secondary"
-            onClick={() =>
-              printReservationsPDF(
-                { eventos: d.eventos, horariosWeek: d.horariosWeek },
-                () => setStatus('El navegador bloqueó la ventana emergente. Permite ventanas emergentes para este sitio.'),
-              )
-            }
-          >
-            <FileText size={16} /> Exportar PDF
-          </button>
-        </div>
-
-        <form onSubmit={submitEvent} className="mt-4 grid gap-3 sm:grid-cols-3 lg:grid-cols-4 [&>*]:min-w-0">
-          <label className="block">
-            <span className="text-xs font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400">Día</span>
-            <select value={evForm.dia} onChange={(e) => setEvForm({ ...evForm, dia: e.target.value })} className="input mt-1" required>
-              {days.map((dd, i) => (
-                <option key={toISODate(dd)} value={toISODate(dd)}>
-                  {DIAS[i]} {dd.getDate()} {MESES[dd.getMonth()]}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="block">
-            <span className="text-xs font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400">Hora</span>
-            <input type="time" value={evForm.hora} onChange={(e) => setEvForm({ ...evForm, hora: e.target.value })} className="input mt-1" />
-          </label>
-          <label className="block">
-            <span className="text-xs font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400">Reservación / nombre</span>
-            <input value={evForm.titulo} onChange={(e) => setEvForm({ ...evForm, titulo: e.target.value })} className="input mt-1" placeholder="Ej. Posada de la familia Gómez" required />
-          </label>
-          <label className="block">
-            <span className="text-xs font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400">Tipo de evento</span>
-            <select value={evForm.tipo} onChange={(e) => setEvForm({ ...evForm, tipo: e.target.value })} className="input mt-1">
-              {['Cumpleaños', 'Posada', 'Graduación', 'Boda', 'XV años', 'Empresarial', 'Otro'].map((t) => (
-                <option key={t} value={t}>
-                  {t}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="block">
-            <span className="text-xs font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400">Cantidad de personas</span>
-            <input type="number" min="1" inputMode="numeric" value={evForm.personas} onChange={(e) => setEvForm({ ...evForm, personas: e.target.value })} className="input mt-1" placeholder="Ej. 25" />
-          </label>
-          <label className="block">
-            <span className="text-xs font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400">Anticipo ($)</span>
-            <input type="number" min="0" step="0.01" inputMode="decimal" value={evForm.anticipo} onChange={(e) => setEvForm({ ...evForm, anticipo: e.target.value })} className="input mt-1" placeholder="0.00" />
-          </label>
-          <label className="block sm:col-span-2">
-            <span className="text-xs font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400">Notas</span>
-            <input value={evForm.nota} onChange={(e) => setEvForm({ ...evForm, nota: e.target.value })} className="input mt-1" placeholder="Ej. Mesa larga en terraza" />
-          </label>
-          <div className="flex items-end">
-            <button type="submit" className="btn-primary w-full justify-center">
-              <Plus size={16} /> Agregar reservación
-            </button>
-          </div>
-        </form>
-
-        {d.eventos.length ? (
-          <ul className="mt-4 space-y-2">
-            {d.eventos.map((e) => {
-              const dd = days.find((x) => toISODate(x) === e.dia);
-              const label = dd ? DIAS[days.indexOf(dd)] + ' ' + dd.getDate() + ' ' + MESES[dd.getMonth()] : e.dia;
-              const det = [];
-              if (e.hora) det.push(e.hora);
-              if (e.tipo_evento) det.push(e.tipo_evento);
-              if (e.personas) det.push(e.personas + ' pers.');
-              if (e.anticipo != null && num(e.anticipo) > 0) det.push('anticipo ' + fmtMoney(e.anticipo));
-              return (
-                <li key={e.id} className="flex items-start justify-between gap-3 rounded-2xl bg-white/60 dark:bg-white/5 border border-white/60 dark:border-white/10 px-3 py-2.5">
-                  <div className="min-w-0">
-                    <p className="text-sm font-bold text-slate-900 dark:text-white">
-                      {label} · {e.titulo}
-                    </p>
-                    <p className="text-xs text-slate-500 dark:text-slate-400">
-                      {det.join(' · ')}
-                      {e.nota ? ' — ' + e.nota : ''}
-                    </p>
-                  </div>
-                  <button
-                    type="button"
-                    aria-label={'Eliminar reservación ' + e.titulo}
-                    onClick={() => d.deleteEvent(e.id)}
-                    className="rounded-full p-2 text-red-500 hover:bg-red-500/10 min-h-[44px] min-w-[44px] flex items-center justify-center shrink-0"
-                  >
-                    <Trash2 size={17} />
-                  </button>
-                </li>
-              );
-            })}
-          </ul>
-        ) : (
-          <p className="mt-4 text-sm text-slate-500 dark:text-slate-400">Sin reservaciones esta semana.</p>
-        )}
       </div>
 
       <ShiftPickerModal

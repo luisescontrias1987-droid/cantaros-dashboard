@@ -1,27 +1,25 @@
-// Captura semanal: venta por mesero (tarjetas con mini gráfica y orden),
-// subida del reporte POS de Soft Restaurant, subida de inventarios y
-// eliminación de semanas de ventas subidas (con PIN 2026).
+// Captura semanal: venta por mesero (tarjetas con mini gráfica y orden;
+// cada tarjeta se puede editar y eliminar con PIN 2026) y subida de
+// inventarios. La subida del reporte POS vive solo en el Panel.
 import React, { useEffect, useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
-import { Upload, Trash2, ArrowUpDown, Banknote } from 'lucide-react';
+import { Upload, Trash2, ArrowUpDown, Banknote, Pencil } from 'lucide-react';
 import { useDashboard } from '../store/DashboardContext.jsx';
-import { fmtMoney, fmtNum, num, parseWeekRef, weekLabel, weekNum } from '../lib/utils.js';
-import { EmptyState, PinModal, SectionTitle } from './ui.jsx';
+import { fmtMoney, num, weekLabel, weekNum } from '../lib/utils.js';
+import { EmptyState, Modal, PinModal, SectionTitle } from './ui.jsx';
 
 export default function Captura() {
   const d = useDashboard();
   const [waiterId, setWaiterId] = useState('');
   const [total, setTotal] = useState('');
   const [status, setStatus] = useState('');
-  const [posFile, setPosFile] = useState(null);
-  const [posWeek, setPosWeek] = useState(d.selectedWeek);
-  const [posStatus, setPosStatus] = useState('');
   const [invFile, setInvFile] = useState(null);
   const [invArea, setInvArea] = useState('barra');
   const [invWeek, setInvWeek] = useState(d.invWeekBarra);
   const [invStatus, setInvStatus] = useState('');
-  const [uploaded, setUploaded] = useState([]);
-  const [pinTarget, setPinTarget] = useState(null);
+  const [editTarget, setEditTarget] = useState(null); // { staffId, name, weekTotal }
+  const [editTotal, setEditTotal] = useState('');
+  const [pinTarget, setPinTarget] = useState(null); // tarjeta a eliminar
   const [pinError, setPinError] = useState('');
   const [busy, setBusy] = useState(false);
 
@@ -32,7 +30,6 @@ export default function Captura() {
 
   useEffect(() => {
     d.refreshWaiterSales().catch(() => {});
-    d.refreshUploadedWeeks().then(setUploaded).catch(() => {});
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -40,7 +37,7 @@ export default function Captura() {
     const byName = {};
     d.ventasMeseroAll.forEach((r) => {
       const name = r.waiter || 'Sin nombre';
-      if (!byName[name]) byName[name] = { name, weeks: {}, total: 0 };
+      if (!byName[name]) byName[name] = { name, staffId: r.staff_id, weeks: {}, total: 0 };
       byName[name].weeks[r.week_start] = num(r.total);
     });
     return Object.keys(byName)
@@ -49,7 +46,9 @@ export default function Captura() {
         const last8 = Object.keys(w.weeks).sort().slice(-8);
         return {
           name,
+          staffId: w.staffId,
           weekTotal: num(w.weeks[d.waiterWeek]),
+          hasSale: w.weeks[d.waiterWeek] != null,
           last8: last8.map((k) => ({ week: k, total: w.weeks[k] })),
           max: Math.max(...last8.map((k) => w.weeks[k]), 0),
         };
@@ -77,24 +76,38 @@ export default function Captura() {
     setBusy(false);
   };
 
-  const submitPOS = async (e) => {
-    e.preventDefault();
-    if (!posFile) {
-      setPosStatus('Elige el archivo del reporte POS (.csv, .xls o .xlsx).');
+  const openEdit = (c) => {
+    setEditTarget(c);
+    setEditTotal(String(c.weekTotal || ''));
+  };
+
+  const submitEdit = async () => {
+    if (!editTarget || editTotal === '') return;
+    setBusy(true);
+    try {
+      await d.submitWaiterSale({ staffId: editTarget.staffId, name: editTarget.name, week: d.waiterWeek, total: num(editTotal) });
+      setStatus('Venta actualizada: ' + editTarget.name + ' · ' + weekLabel(d.waiterWeek) + ' · ' + fmtMoney(num(editTotal)) + '.');
+      setEditTarget(null);
+    } catch (err) {
+      setStatus('No se pudo guardar: ' + (err.message || err));
+    }
+    setBusy(false);
+  };
+
+  const confirmDeleteWaiter = async (pin) => {
+    if (pin !== '2026') {
+      setPinError('PIN incorrecto.');
       return;
     }
+    setPinError('');
+    const target = pinTarget;
+    setPinTarget(null);
     setBusy(true);
-    setPosStatus('Subiendo…');
     try {
-      const res = await d.uploadPOS({ file: posFile, week: posWeek });
-      let msg =
-        'Reporte subido: ' + res.total + ' productos en la ' + weekLabel(res.week) + '.' +
-        (res.detected ? ' Semana detectada del nombre de la hoja/archivo.' : '');
-      if (res.noCost.length) msg += ' Sin costo: ' + res.noCost.join(', ') + '.';
-      setPosStatus(msg);
-      setUploaded(await d.refreshUploadedWeeks());
+      await d.deleteWaiterSale({ week: d.waiterWeek, staffId: target.staffId });
+      setStatus('Venta eliminada: ' + target.name + ' · ' + weekLabel(d.waiterWeek) + '.');
     } catch (err) {
-      setPosStatus('No se pudo subir: ' + (err.message || err));
+      setStatus('No se pudo eliminar: ' + (err.message || err));
     }
     setBusy(false);
   };
@@ -116,24 +129,6 @@ export default function Captura() {
       );
     } catch (err) {
       setInvStatus('No se pudo subir: ' + (err.message || err));
-    }
-    setBusy(false);
-  };
-
-  const confirmDeleteWeek = async (pin) => {
-    if (pin !== '2026') {
-      setPinError('PIN incorrecto.');
-      return;
-    }
-    setPinError('');
-    setPinTarget(null);
-    setBusy(true);
-    try {
-      await d.deleteWeek(pinTarget.week);
-      setUploaded(await d.refreshUploadedWeeks());
-      setPosStatus('Semana ' + weekNum(pinTarget.week) + ' eliminada.');
-    } catch (err) {
-      setPosStatus('No se pudo eliminar: ' + (err.message || err));
     }
     setBusy(false);
   };
@@ -210,6 +205,24 @@ export default function Captura() {
                     Últimas {c.last8.length} semanas: {c.last8.map((p) => 'S' + weekNum(p.week)).join(' · ')}
                   </p>
                 )}
+                <div className="mt-3 flex gap-2">
+                  <button type="button" className="btn-secondary flex-1" onClick={() => openEdit(c)} disabled={busy}>
+                    <Pencil size={15} /> Editar
+                  </button>
+                  {c.hasSale && c.staffId && (
+                    <button
+                      type="button"
+                      className="btn-danger"
+                      onClick={() => {
+                        setPinError('');
+                        setPinTarget(c);
+                      }}
+                      disabled={busy}
+                    >
+                      <Trash2 size={15} /> Eliminar
+                    </button>
+                  )}
+                </div>
               </motion.div>
             ))}
           </div>
@@ -217,33 +230,6 @@ export default function Captura() {
           <div className="mt-3">
             <EmptyState title={'Aún no hay ventas por mesero en la ' + weekLabel(d.waiterWeek)} subtitle="Captura el total de venta de cada mesero con el formulario de arriba." />
           </div>
-        )}
-      </div>
-
-      <div id="subir-pos-card" className="glass-card rounded-3xl p-4 sm:p-5">
-        <SectionTitle title="Subir reporte POS" subtitle="Reporte de Soft Restaurant (.csv, .xls o .xlsx). Si la hoja o el archivo se llama 'Semana 48', se detecta la semana sola; si no, usa la semana elegida." />
-        <form onSubmit={submitPOS} className="mt-4 grid gap-3 sm:grid-cols-3 [&>*]:min-w-0">
-          <label className="block">
-            <span className="text-xs font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400">Archivo del reporte</span>
-            <input type="file" accept=".csv,.xls,.xlsx" onChange={(e) => setPosFile(e.target.files && e.target.files[0])} className="input mt-1" />
-          </label>
-          <label className="block">
-            <span className="text-xs font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400">Semana (lunes)</span>
-            <input type="date" value={posWeek} onChange={(e) => setPosWeek(e.target.value)} className="input mt-1" />
-          </label>
-          <div className="flex items-end">
-            <button type="submit" className="btn-primary w-full justify-center" disabled={busy}>
-              <Upload size={16} /> Subir reporte
-            </button>
-          </div>
-        </form>
-        {posStatus && <p className="mt-3 text-sm text-slate-600 dark:text-slate-300">{posStatus}</p>}
-        {posFile && (
-          <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
-            {parseWeekRef(posFile.name, d.selectedWeek)
-              ? 'Semana detectada del nombre del archivo: ' + weekLabel(parseWeekRef(posFile.name, d.selectedWeek)) + '.'
-              : 'El archivo no trae el número de semana en el nombre; se usará la semana elegida.'}
-          </p>
         )}
       </div>
 
@@ -274,37 +260,49 @@ export default function Captura() {
         {invStatus && <p className="mt-3 text-sm text-slate-600 dark:text-slate-300">{invStatus}</p>}
       </div>
 
-      <div className="glass-card rounded-3xl p-4 sm:p-5">
-        <SectionTitle title="Semanas de ventas cargadas (reporte POS)" subtitle="Eliminar una semana borra sus ventas y su renglón en el reporte importado. Pide PIN 2026." />
-        {uploaded.length ? (
-          <ul className="mt-3 space-y-2">
-            {uploaded.map((u) => (
-              <li key={u.week} className="flex items-center justify-between gap-3 rounded-2xl bg-white/60 dark:bg-white/5 border border-white/60 dark:border-white/10 px-3 py-2.5">
-                <span className="text-sm font-semibold text-slate-800 dark:text-slate-100">
-                  {weekLabel(u.week)} · {fmtNum(u.count)} productos
-                </span>
-                <button type="button" className="btn-danger" onClick={() => { setPinError(''); setPinTarget(u); }} disabled={busy}>
-                  <Trash2 size={15} /> Eliminar
-                </button>
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <p className="mt-3 text-sm text-slate-500 dark:text-slate-400">No hay semanas de ventas cargadas desde el reporte POS.</p>
+      <Modal open={!!editTarget} onClose={() => setEditTarget(null)} title={editTarget ? 'Editar venta · ' + editTarget.name : ''}>
+        {editTarget && (
+          <div className="space-y-3">
+            <p className="text-sm text-slate-600 dark:text-slate-300">
+              Total de venta de {editTarget.name} en la {weekLabel(d.waiterWeek)}.
+            </p>
+            <label className="block">
+              <span className="text-xs font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400">Total de venta ($)</span>
+              <input
+                type="number"
+                min="0"
+                step="0.01"
+                inputMode="decimal"
+                value={editTotal}
+                onChange={(e) => setEditTotal(e.target.value)}
+                className="input mt-1"
+                placeholder="0.00"
+                autoFocus
+              />
+            </label>
+            <div className="flex gap-2">
+              <button type="button" className="btn-secondary flex-1" onClick={() => setEditTarget(null)}>
+                Cancelar
+              </button>
+              <button type="button" className="btn-primary flex-1" onClick={submitEdit} disabled={busy}>
+                Guardar cambios
+              </button>
+            </div>
+          </div>
         )}
-      </div>
+      </Modal>
 
       <PinModal
         open={!!pinTarget}
-        title="Eliminar semana de ventas"
+        title="Eliminar venta por mesero"
         message={
           pinTarget
-            ? '¿Eliminar las ventas de la ' + weekLabel(pinTarget.week) + '? Se borran ' + fmtNum(pinTarget.count) + ' productos de esa semana. Escribe el PIN 2026 para confirmar.'
+            ? '¿Eliminar la venta de ' + pinTarget.name + ' en la ' + weekLabel(d.waiterWeek) + ' (' + fmtMoney(pinTarget.weekTotal) + ')? Solo se borra esa captura, no la semana entera. Escribe el PIN 2026 para confirmar.'
             : ''
         }
         error={pinError}
         onCancel={() => setPinTarget(null)}
-        onOk={confirmDeleteWeek}
+        onOk={confirmDeleteWaiter}
       />
     </div>
   );

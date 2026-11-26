@@ -4,9 +4,9 @@ import {
   LayoutDashboard,
   ClipboardList,
   CalendarDays,
+  CalendarCheck,
   Boxes,
   ChefHat,
-  Upload,
   FileText,
   Moon,
   Sun,
@@ -27,12 +27,14 @@ const GROUPS = [
     items: [
       { id: 'inventario', label: 'Barra', icon: Boxes, countKey: 'barra' },
       { id: 'cocina', label: 'Cocina', icon: ChefHat, countKey: 'cocina' },
-      { id: 'subir-pos', label: 'Subir POS', icon: Upload, countKey: 'posWeeks' },
     ],
   },
   {
     label: 'Empresa',
-    items: [{ id: 'documentos', label: 'Documentos', icon: FileText, countKey: 'docs' }],
+    items: [
+      { id: 'documentos', label: 'Documentos', icon: FileText, countKey: 'docs' },
+      { id: 'reservaciones', label: 'Reservaciones', icon: CalendarCheck, countKey: 'reservaciones' },
+    ],
   },
 ];
 

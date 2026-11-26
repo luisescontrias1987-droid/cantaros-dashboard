@@ -130,6 +130,30 @@ export function weekRangeTitle(iso) {
     return 'Horario de la semana del ' + a.getDate() + ' de ' + MESES_LARGOS[a.getMonth()] + ' al ' + b.getDate() + ' de ' + MESES_LARGOS[b.getMonth()] + ' de ' + a.getFullYear();
   return 'Horario de la semana del ' + a.getDate() + ' de ' + MESES_LARGOS[a.getMonth()] + ' de ' + a.getFullYear() + ' al ' + b.getDate() + ' de ' + MESES_LARGOS[b.getMonth()] + ' de ' + b.getFullYear();
 }
+export function reservationsRangeTitle(iso) {
+  const days = weekDays(iso);
+  if (!days.length) return 'Reservaciones de la semana';
+  const a = days[0];
+  const b = days[6];
+  if (a.getMonth() === b.getMonth() && a.getFullYear() === b.getFullYear())
+    return 'Reservaciones de la semana del ' + a.getDate() + ' al ' + b.getDate() + ' de ' + MESES_LARGOS[a.getMonth()] + ' de ' + a.getFullYear();
+  if (a.getFullYear() === b.getFullYear())
+    return 'Reservaciones de la semana del ' + a.getDate() + ' de ' + MESES_LARGOS[a.getMonth()] + ' al ' + b.getDate() + ' de ' + MESES_LARGOS[b.getMonth()] + ' de ' + a.getFullYear();
+  return 'Reservaciones de la semana del ' + a.getDate() + ' de ' + MESES_LARGOS[a.getMonth()] + ' de ' + a.getFullYear() + ' al ' + b.getDate() + ' de ' + MESES_LARGOS[b.getMonth()] + ' de ' + b.getFullYear();
+}
+export function fmtDateDMY(d) {
+  if (!d) return '';
+  const x = d instanceof Date ? d : new Date(d);
+  if (isNaN(x)) return '';
+  return x.getDate() + '/' + String(x.getMonth() + 1).padStart(2, '0') + '/' + x.getFullYear();
+}
+// El reporte POS trae su periodo ("DEL 01/11/2026 AL 09/11/2026").
+// Regla: week_start = lunes de la semana ISO de (fecha inicial + 1 día).
+// 01/11/2026 (domingo) + 1 día = 02/11/2026 → 2026-11-02, Semana 45.
+export function weekStartFromPeriodStart(d) {
+  const x = new Date(d.getFullYear(), d.getMonth(), d.getDate() + 1);
+  return toISODate(mondayOf(x));
+}
 export function fmtHour12(hhmm) {
   if (!hhmm) return '';
   const p = String(hhmm).split(':');

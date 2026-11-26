@@ -21,6 +21,7 @@ import {
   findHeaderRow,
   headerIndex,
   invDerived,
+  parseReportPeriod,
   pick,
   readSpreadsheetWithMeta,
   ensureXLSX,
@@ -29,14 +30,17 @@ import {
   AREAS,
   DIAS,
   MESES,
+  fmtDateDMY,
   mondayOf,
   num,
   parseWeekRef,
+  reservationsRangeTitle,
   toISODate,
   weekDays,
   weekLabel,
   weekNum,
   weekRangeTitle,
+  weekStartFromPeriodStart,
 } from '../lib/utils.js';
 import { POS_MAP } from '../lib/posMap.js';
 import { invSummary, periodRange, pickInvWeek } from '../lib/period.js';
@@ -69,6 +73,8 @@ export function DashboardProvider({ children }) {
   const [staff, setStaff] = useState([]);
   const [horarios, setHorarios] = useState([]);
   const [eventos, setEventos] = useState([]);
+  const [reservacionesWeek, setReservacionesWeek] = useState(() => toISODate(mondayOf(new Date())));
+  const [reservaciones, setReservaciones] = useState([]);
   const [horariosReady, setHorariosReady] = useState(false);
   const [loaded, setLoaded] = useState(false);
   const [ventasMeseroAll, setVentasMeseroAll] = useState([]);
@@ -82,7 +88,8 @@ export function DashboardProvider({ children }) {
   stateRef.current = {
     weeks, selectedWeek, period, horariosWeek, products, productsByClave,
     salesRows, salesDesc, invResumen, invBarra, invCocina, invWeekBarra,
-    invWeekCocina, docs, staff, horarios, eventos, horariosReady, loaded,
+    invWeekCocina, docs, staff, horarios, eventos, reservacionesWeek,
+    reservaciones, horariosReady, loaded,
     ventasMeseroAll, waiterWeeks, waiterWeek, waiterSortDir, undoStaff,
   };
 
@@ -111,6 +118,31 @@ export function DashboardProvider({ children }) {
       setHorariosReady(false);
     }
   }, []);
+
+  // Reservaciones: su propia semana (independiente de Horarios y del Panel)
+  // y su propia lista de eventos de esa semana.
+  const loadReservacionesData = useCallback(async (weekOverride) => {
+    const s = stateRef.current;
+    const week = weekOverride || s.reservacionesWeek;
+    try {
+      setReservaciones(
+        (await sb('eventos', { select: '*', query: { week_start: 'eq.' + week }, order: 'dia.asc', limit: 200 })) || [],
+      );
+    } catch (e) {
+      setReservaciones([]);
+    }
+  }, []);
+
+  const changeReservacionesWeek = useCallback(
+    async (iso) => {
+      const p = iso.split('-').map(Number);
+      const monday = toISODate(mondayOf(new Date(p[0], p[1] - 1, p[2])));
+      setReservacionesWeek(monday);
+      await loadReservacionesData(monday);
+      return monday;
+    },
+    [loadReservacionesData],
+  );
 
   const loadWeekData = useCallback(async (overrides = {}) => {
     const s = stateRef.current;
@@ -151,7 +183,8 @@ export function DashboardProvider({ children }) {
       setInvCocina([]);
     }
     await loadHorariosData();
-  }, [loadHorariosData]);
+    await loadReservacionesData();
+  }, [loadHorariosData, loadReservacionesData]);
 
   const buildWeekList = useCallback((weeksArr, invArr, current) => {
     const all = {};
@@ -180,7 +213,9 @@ export function DashboardProvider({ children }) {
       setWeeks(w);
       setInvResumen(inv);
       setProducts(prods);
-      setDocs(results[3] || []);
+      // Solo documentos con archivo real: las filas sin file_url (ejemplos
+      // viejos) no se muestran aunque sigan en la tabla.
+      setDocs((results[3] || []).filter((x) => x.file_url));
       const byClave = {};
       prods.forEach((p) => {
         byClave[p.clave] = p;
@@ -288,13 +323,42 @@ export function DashboardProvider({ children }) {
     [refreshWaiterSales],
   );
 
+  // Borra solo la captura de ese mesero en esa semana (no la semana entera).
+  const deleteWaiterSale = useCallback(
+    async ({ week, staffId }) => {
+      await sb('ventas_mesero', {
+        method: 'DELETE',
+        query: { week_start: 'eq.' + week, staff_id: 'eq.' + staffId },
+      });
+      await refreshWaiterSales(week);
+    },
+    [refreshWaiterSales],
+  );
+
   /* ---------------- subidas ---------------- */
   const uploadPOS = useCallback(
     async ({ file, week }) => {
       const meta = await readSpreadsheetWithMeta(file);
       const rows = meta.rows;
-      const detected = parseWeekRef(meta.sheetName, stateRef.current.selectedWeek);
-      if (detected) week = detected;
+      // Semana, en orden: (1) periodo del propio reporte
+      // ("PRODUCTOS VENDIDOS DEL 01/11/2026 AL 09/11/2026"), (2) nombre de
+      // la hoja o del archivo ("Semana 48"), (3) la semana elegida.
+      let detectedFrom = null;
+      let periodText = null;
+      const periodInfo = parseReportPeriod(rows);
+      if (periodInfo) {
+        week = weekStartFromPeriodStart(periodInfo.start);
+        detectedFrom = 'periodo';
+        periodText = fmtDateDMY(periodInfo.start) + ' – ' + fmtDateDMY(periodInfo.end);
+      } else {
+        const det =
+          parseWeekRef(meta.sheetName, stateRef.current.selectedWeek) ||
+          parseWeekRef(file.name, stateRef.current.selectedWeek);
+        if (det) {
+          week = det;
+          detectedFrom = 'hoja';
+        }
+      }
       const headerAt = findHeaderRow(rows, 'clave');
       if (headerAt === -1) throw new Error('El archivo no trae la columna CLAVE del reporte.');
       const idx = headerIndex(rows[headerAt]);
@@ -357,7 +421,7 @@ export function DashboardProvider({ children }) {
       await sbChunks('ventas_pos_import', staging);
       await sbChunks('weekly_sales', sales);
       await loadAll();
-      return { week, detected, total: staging.length, noCost };
+      return { week, detected: !!detectedFrom, detectedFrom, periodText, total: staging.length, noCost };
     },
     [loadAll],
   );
@@ -465,7 +529,7 @@ export function DashboardProvider({ children }) {
 
   /* ---------------- documentos ---------------- */
   const reloadDocs = useCallback(async () => {
-    setDocs((await sb('documents', { select: '*', order: 'title.asc' })) || []);
+    setDocs(((await sb('documents', { select: '*', order: 'title.asc' })) || []).filter((x) => x.file_url));
   }, []);
 
   const uploadDoc = useCallback(
@@ -604,17 +668,19 @@ export function DashboardProvider({ children }) {
   const submitEvent = useCallback(
     async (body) => {
       await sb('eventos', { method: 'POST', body, prefer: 'return=representation' });
+      await loadReservacionesData(body.week_start);
       await loadHorariosData();
     },
-    [loadHorariosData],
+    [loadHorariosData, loadReservacionesData],
   );
 
   const deleteEvent = useCallback(
-    async (id) => {
+    async (id, week) => {
       await sb('eventos', { method: 'DELETE', query: { id: 'eq.' + id } });
+      await loadReservacionesData(week);
       await loadHorariosData();
     },
-    [loadHorariosData],
+    [loadHorariosData, loadReservacionesData],
   );
 
   const exportScheduleXLSX = useCallback(async () => {
@@ -660,6 +726,30 @@ export function DashboardProvider({ children }) {
     return fname;
   }, []);
 
+  const exportReservationsXLSX = useCallback(async () => {
+    const XLSX = await ensureXLSX();
+    const s = stateRef.current;
+    const days = weekDays(s.reservacionesWeek);
+    const aoa = [
+      ['Semana ' + weekNum(s.reservacionesWeek) + ' · ' + reservationsRangeTitle(s.reservacionesWeek)],
+      ['Cántaros, Cazos y Cantares · Calle Sol #840 Oriente, Ciudad Juárez'],
+      [],
+      ['Día', 'Hora', 'Reservación', 'Tipo', 'Personas', 'Anticipo', 'Notas'],
+    ];
+    s.reservaciones.forEach((e) => {
+      const d = days.find((x) => toISODate(x) === e.dia);
+      const label = d ? DIAS[days.indexOf(d)] + ' ' + d.getDate() + ' ' + MESES[d.getMonth()] : e.dia;
+      aoa.push([label, e.hora || '', e.titulo, e.tipo_evento || '', e.personas || '', e.anticipo != null ? num(e.anticipo) : '', e.nota || '']);
+    });
+    const ws = XLSX.utils.aoa_to_sheet(aoa);
+    ws['!cols'] = [{ wch: 16 }, { wch: 12 }, { wch: 34 }, { wch: 14 }, { wch: 10 }, { wch: 12 }, { wch: 36 }];
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Reservaciones');
+    const fname = 'reservaciones-semana' + weekNum(s.reservacionesWeek) + '-' + s.reservacionesWeek + '.xlsx';
+    XLSX.writeFile(wb, fname);
+    return fname;
+  }, []);
+
   const value = useMemo(
     () => ({
       live, liveError, configNeeded, statusText,
@@ -667,18 +757,19 @@ export function DashboardProvider({ children }) {
       products, productsByClave, salesRows, salesDesc,
       invResumen, invBarra, invCocina, invWeekBarra, invWeekCocina,
       docs, staff, horarios, eventos, horariosReady, loaded,
+      reservacionesWeek, reservaciones,
       ventasMeseroAll, waiterWeeks, waiterWeek, waiterSortDir,
       undoStaff,
       setLive, setStatusText, setSelectedWeek, setPeriod, setHorariosWeek,
       setWaiterWeek, setWaiterSortDir,
-      boot, loadAll, loadWeekData, loadHorariosData,
-      changeWeek, changePeriod, changeHorariosWeek,
-      refreshWaiterSales, submitWaiterSale,
+      boot, loadAll, loadWeekData, loadHorariosData, loadReservacionesData,
+      changeWeek, changePeriod, changeHorariosWeek, changeReservacionesWeek,
+      refreshWaiterSales, submitWaiterSale, deleteWaiterSale,
       uploadPOS, uploadInventory,
       refreshUploadedWeeks, deleteWeek,
       reloadDocs, uploadDoc, deleteDoc,
       saveShift, saveStaffEdit, deleteStaff, undoStaffChange, submitStaff,
-      submitEvent, deleteEvent, exportScheduleXLSX,
+      submitEvent, deleteEvent, exportScheduleXLSX, exportReservationsXLSX,
       invSummaryFor: (area) =>
         invSummary(
           stateRef.current.invResumen,
@@ -691,13 +782,15 @@ export function DashboardProvider({ children }) {
       live, liveError, configNeeded, statusText, weeks, selectedWeek, period,
       horariosWeek, products, productsByClave, salesRows, salesDesc, invResumen,
       invBarra, invCocina, invWeekBarra, invWeekCocina, docs, staff, horarios,
-      eventos, horariosReady, loaded, ventasMeseroAll, waiterWeeks, waiterWeek,
+      eventos, horariosReady, loaded, reservacionesWeek, reservaciones,
+      ventasMeseroAll, waiterWeeks, waiterWeek,
       waiterSortDir, undoStaff, boot, loadAll, loadWeekData, loadHorariosData,
-      changeWeek, changePeriod, changeHorariosWeek, refreshWaiterSales,
-      submitWaiterSale, uploadPOS, uploadInventory, refreshUploadedWeeks,
+      loadReservacionesData, changeWeek, changePeriod, changeHorariosWeek,
+      changeReservacionesWeek, refreshWaiterSales, submitWaiterSale,
+      deleteWaiterSale, uploadPOS, uploadInventory, refreshUploadedWeeks,
       deleteWeek, reloadDocs, uploadDoc, deleteDoc, saveShift, saveStaffEdit,
       deleteStaff, undoStaffChange, submitStaff, submitEvent, deleteEvent,
-      exportScheduleXLSX,
+      exportScheduleXLSX, exportReservationsXLSX,
     ],
   );
 
