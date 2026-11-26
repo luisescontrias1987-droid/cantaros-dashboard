@@ -60,6 +60,22 @@ export function parseCSV(text) {
   return rows.filter((r) => r.some((c) => String(c).trim() !== ''));
 }
 
+// Lee el periodo de las filas de título del reporte POS, por ejemplo
+// "PRODUCTOS VENDIDOS DEL 01/11/2026 AL 09/11/2026". Devuelve
+// { start: Date, end: Date } o null si no hay periodo legible.
+export function parseReportPeriod(rows) {
+  const text = (rows || [])
+    .slice(0, 12)
+    .map((r) => r.map((c) => String(c == null ? '' : c)).join(' '))
+    .join(' ');
+  const m = text.match(/DEL\s+(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})\s+AL\s+(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})/i);
+  if (!m) return null;
+  const start = new Date(Number(m[3]), Number(m[2]) - 1, Number(m[1]));
+  const end = new Date(Number(m[6]), Number(m[5]) - 1, Number(m[4]));
+  if (isNaN(start) || isNaN(end)) return null;
+  return { start, end };
+}
+
 export function findHeaderRow(rows, wanted) {
   // El CSV puede traer filas de título antes del encabezado: buscar la
   // primera fila que contenga la columna buscada.

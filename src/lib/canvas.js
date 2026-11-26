@@ -2,7 +2,7 @@
 // "Ver imagen" y la descarga PNG). Portado de vercel-app/index.html.
 // La imagen conserva los colores propios del horario (verde oscuro y
 // dorado), como en la app actual.
-import { AREAS, DIAS, MESES, fmtMoney, num, toISODate, weekDays, weekNum, weekRangeTitle } from './utils.js';
+import { AREAS, DIAS, MESES, fmtMoney, num, reservationsRangeTitle, toISODate, weekDays, weekLabel, weekNum, weekRangeTitle } from './utils.js';
 
 export function drawScheduleCanvas(canvas, { staff, horarios, eventos, horariosWeek }) {
   const ctx = canvas.getContext('2d');
@@ -158,5 +158,101 @@ export function drawScheduleCanvas(canvas, { staff, horarios, eventos, horariosW
   ctx.fillStyle = '#667085';
   ctx.font = '600 17px ' + FONT;
   ctx.fillText('Generado desde el dashboard Cántaros · OFF = descanso · F = falta · 11:00 AM - CL = entrada a cierre · 2:00 PM - 5:00 PM = entrada y salida', pad + 6, H - 18);
+  return canvas;
+}
+
+// Imagen de reservaciones (como la del horario): título con el rango de la
+// semana y tabla Día / Hora / Reservación / Tipo / Personas / Anticipo / Notas.
+export function drawReservationsCanvas(canvas, { eventos, reservacionesWeek }) {
+  const ctx = canvas.getContext('2d');
+  const days = weekDays(reservacionesWeek);
+  const evs = (eventos || []).slice();
+  const W = 1080;
+  const pad = 14;
+  const titleH = 100;
+  const headH = 56;
+  const rowH = 46;
+  const footH = 44;
+  const H = titleH + headH + Math.max(1, evs.length) * rowH + footH;
+  canvas.width = W;
+  canvas.height = H;
+  const FONT = '-apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif';
+  function fit(text, maxW, font) {
+    ctx.font = font;
+    let t = String(text == null ? '' : text);
+    if (ctx.measureText(t).width <= maxW) return t;
+    while (t.length > 1 && ctx.measureText(t + '…').width > maxW) t = t.slice(0, -1);
+    return t + '…';
+  }
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(0, 0, W, H);
+  ctx.textBaseline = 'middle';
+  ctx.textAlign = 'left';
+  ctx.fillStyle = '#1b2530';
+  ctx.font = '800 28px ' + FONT;
+  ctx.fillText(
+    fit('Semana ' + weekNum(reservacionesWeek) + ' · ' + reservationsRangeTitle(reservacionesWeek), W - pad * 2 - 12, '800 28px ' + FONT),
+    pad + 6,
+    42,
+  );
+  ctx.fillStyle = '#667085';
+  ctx.font = '600 21px ' + FONT;
+  ctx.fillText('Cántaros, Cazos y Cantares · Calle Sol #840 Oriente, Ciudad Juárez', pad + 6, 78);
+  const cols = [
+    { label: 'DÍA', w: 120 },
+    { label: 'HORA', w: 96 },
+    { label: 'RESERVACIÓN', w: 252 },
+    { label: 'TIPO', w: 120 },
+    { label: 'PERS.', w: 76 },
+    { label: 'ANTICIPO', w: 110 },
+    { label: 'NOTAS', w: 0 },
+  ];
+  let x = pad;
+  cols.forEach((c) => {
+    if (c.w === 0) c.w = W - pad * 2 - (x - pad);
+    c.x = x;
+    x += c.w;
+  });
+  let y = titleH;
+  ctx.fillStyle = '#0d2e20';
+  ctx.fillRect(pad, y, W - pad * 2, headH);
+  ctx.fillStyle = '#ffffff';
+  ctx.font = '800 19px ' + FONT;
+  cols.forEach((c) => {
+    ctx.fillText(c.label, c.x + 10, y + headH / 2);
+  });
+  y += headH;
+  if (!evs.length) {
+    ctx.fillStyle = '#667085';
+    ctx.font = '600 22px ' + FONT;
+    ctx.fillText('Sin reservaciones en la ' + weekLabel(reservacionesWeek) + '.', pad + 10, y + rowH / 2);
+    y += rowH;
+  }
+  evs.forEach((e, i) => {
+    if (i % 2 === 1) {
+      ctx.fillStyle = '#f7faf8';
+      ctx.fillRect(pad, y, W - pad * 2, rowH);
+    }
+    const d = days.find((dd) => toISODate(dd) === e.dia);
+    const label = d ? DIAS[days.indexOf(d)] + ' ' + d.getDate() + ' ' + MESES[d.getMonth()] : e.dia;
+    const vals = [
+      label,
+      e.hora || '—',
+      e.titulo,
+      e.tipo_evento || '—',
+      e.personas ? String(e.personas) : '—',
+      e.anticipo != null && num(e.anticipo) > 0 ? fmtMoney(e.anticipo) : '—',
+      e.nota || '',
+    ];
+    ctx.fillStyle = '#1b2530';
+    ctx.font = '700 19px ' + FONT;
+    cols.forEach((c, j) => {
+      ctx.fillText(fit(vals[j], c.w - 20, '700 19px ' + FONT), c.x + 10, y + rowH / 2);
+    });
+    y += rowH;
+  });
+  ctx.fillStyle = '#667085';
+  ctx.font = '600 17px ' + FONT;
+  ctx.fillText('Generado desde el dashboard Cántaros · Reservaciones de la semana', pad + 6, H - 18);
   return canvas;
 }
