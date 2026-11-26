@@ -21,9 +21,10 @@ export default function PosUpload() {
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
+    if (!d.live) return; // esperar a que cargue la config de Supabase; antes cfg.url es null y sb() falla
     d.refreshUploadedWeeks().then(setUploaded).catch(() => {});
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [d.live]);
 
   const onFileChange = async (f) => {
     setPosFile(f);
