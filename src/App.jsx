@@ -11,10 +11,11 @@ import PinGate from './components/PinGate.jsx';
 import Panel from './components/Panel.jsx';
 import Captura from './components/Captura.jsx';
 import Horarios from './components/Horarios.jsx';
+import Reservaciones from './components/Reservaciones.jsx';
 import Inventory from './components/Inventory.jsx';
 import Documents from './components/Documents.jsx';
 
-const VIEWS = ['panel', 'captura', 'horarios', 'inventario', 'cocina', 'subir-pos', 'documentos'];
+const VIEWS = ['panel', 'captura', 'horarios', 'inventario', 'cocina', 'documentos', 'reservaciones'];
 
 export default function App() {
   const d = useDashboard();
@@ -47,7 +48,8 @@ export default function App() {
 
   const navigate = useCallback((v) => {
     if (v === 'subir-pos') {
-      setView('captura');
+      // "Subir reporte POS" vive solo en el Panel: ir al Panel y bajar a la tarjeta.
+      setView('panel');
       setTimeout(() => {
         const el = document.querySelector('#subir-pos-card');
         if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -63,9 +65,9 @@ export default function App() {
       barra: d.invBarra.length,
       cocina: d.invCocina.length,
       docs: d.docs.length,
-      posWeeks: d.weeks.length,
+      reservaciones: d.reservaciones.length,
     }),
-    [d.invBarra.length, d.invCocina.length, d.docs.length, d.weeks.length],
+    [d.invBarra.length, d.invCocina.length, d.docs.length, d.reservaciones.length],
   );
 
   const progress = useMemo(() => {
@@ -140,6 +142,7 @@ export default function App() {
                 {view === 'inventario' && <Inventory area="barra" query={query} />}
                 {view === 'cocina' && <Inventory area="cocina" query={query} />}
                 {view === 'documentos' && <Documents query={query} />}
+                {view === 'reservaciones' && <Reservaciones />}
               </motion.div>
             </AnimatePresence>
           </div>
