@@ -1,7 +1,8 @@
-// Barra superior glass: buscador, selector de semana, periodo y avatar.
+// Barra superior glass: buscador, selector de semana, periodo, selector de tema y avatar.
 import React from 'react';
-import { Search, Moon, Sun, ChevronDown } from 'lucide-react';
+import { Search, ChevronDown } from 'lucide-react';
 import { weekLabel } from '../lib/utils.js';
+import { ThemeSelector } from './ThemeSelector.jsx';
 
 export default function Topbar({
   query,
@@ -11,8 +12,8 @@ export default function Topbar({
   onWeekChange,
   period,
   onPeriodChange,
-  dark,
-  onToggleDark,
+  theme,
+  onThemeChange,
   live,
 }) {
   return (
@@ -62,16 +63,9 @@ export default function Topbar({
           </button>
         ))}
       </div>
-      <button
-        type="button"
-        onClick={onToggleDark}
-        aria-label={dark ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'}
-        className="rounded-full p-2.5 text-slate-600 hover:bg-white/60 dark:text-slate-200 dark:hover:bg-white/10 min-h-[44px] min-w-[44px] flex items-center justify-center"
-      >
-        {dark ? <Sun size={19} /> : <Moon size={19} />}
-      </button>
+      <ThemeSelector theme={theme} onChange={onThemeChange} pillId="theme-pill-header" />
       <div className="flex items-center gap-2 pl-1">
-        <img src="/logo-cantaros.png" alt="Joms" className="h-10 w-10 rounded-full object-contain bg-white/80 p-0.5 ring-2 ring-cyan-400/60" />
+        <img src="/logo-cantaros-navidad.png" alt="Joms" className="h-10 w-10 shrink-0 object-contain" />
         <span className="hidden xl:block">
           <span className="block text-sm font-bold text-slate-900 dark:text-white leading-tight">Joms</span>
           <span className={'block text-xs leading-tight ' + (live ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-400')}>
