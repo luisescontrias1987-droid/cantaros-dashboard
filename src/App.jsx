@@ -3,7 +3,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useDashboard } from './store/DashboardContext.jsx';
-import { THEME_STORAGE_KEY, applyTheme, resolveTheme } from './lib/themes.js';
+import { applyTheme, getInitialTheme } from './lib/themes.js';
 import Sidebar from './components/Sidebar.jsx';
 import Topbar from './components/Topbar.jsx';
 import MobileNav from './components/MobileNav.jsx';
@@ -23,9 +23,10 @@ export default function App() {
   const [view, setView] = useState('panel');
   const [query, setQuery] = useState('');
   // Tema visual: 'vidrio-oscuro' (default), 'claro' o 'vidrio'.
-  // Se guarda en localStorage y persiste entre visitas. La clave vieja
-  // 'dark'/'light' migra a 'vidrio'/'claro' (ver lib/themes.js).
-  const [theme, setTheme] = useState(() => resolveTheme(localStorage.getItem(THEME_STORAGE_KEY)));
+  // Se guarda en localStorage y persiste entre visitas. Reset único
+  // (27 nov 2026): la primera carga arranca en Vidrio oscuro para
+  // todos, aunque tuvieran preferencia guardada (ver lib/themes.js).
+  const [theme, setTheme] = useState(() => getInitialTheme());
   const [unlocked, setUnlocked] = useState(() => sessionStorage.getItem('cantaros-pin-ok') === '1');
   const [booted, setBooted] = useState(false);
 

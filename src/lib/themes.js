@@ -1,8 +1,12 @@
 // Temas visuales del dashboard. Solo presentación: no toca datos,
 // llamadas a Supabase ni lógica de ningún componente.
 // 'vidrio-oscuro' es el tema por default cuando no hay elección guardada.
-// Migración de la clave vieja ('dark'/'light'): 'dark' -> 'vidrio',
-// 'light' -> 'claro', para respetar la elección que el usuario ya tenía.
+// Reset único (27 nov 2026, por decisión de Joms): la primera vez que
+// carga esta versión, TODOS arrancan en Vidrio oscuro aunque tuvieran
+// una preferencia guardada de antes ('light'/'dark' o 'claro'/'vidrio').
+// Después del reset, la elección del usuario vuelve a persistir normal.
+
+export const THEME_RESET_KEY = 'cantaros-theme-reset-v1';
 
 export const THEMES = [
   {
@@ -43,6 +47,36 @@ export function resolveTheme(saved) {
   if (saved === 'light') return 'claro';
   if (THEME_IDS.indexOf(saved) !== -1) return saved;
   return DEFAULT_THEME;
+}
+
+// Tema inicial al cargar la app. Si el reset único aún no se aplicó,
+// fuerza Vidrio oscuro para todos (ignora cualquier preferencia
+// guardada) y marca el reset como hecho. En cargas posteriores, la
+// preferencia guardada se resuelve normal y persiste.
+export function getInitialTheme() {
+  let resetDone = false;
+  try {
+    resetDone = localStorage.getItem(THEME_RESET_KEY) === '1';
+  } catch (e) {
+    // Sin almacenamiento: no se puede marcar el reset; el default ya
+    // es Vidrio oscuro y la elección solo vive en esta sesión.
+  }
+  if (!resetDone) {
+    try {
+      localStorage.setItem(THEME_RESET_KEY, '1');
+      localStorage.setItem(THEME_STORAGE_KEY, DEFAULT_THEME);
+    } catch (e) {
+      // Sin almacenamiento: nada que guardar.
+    }
+    return DEFAULT_THEME;
+  }
+  let saved = null;
+  try {
+    saved = localStorage.getItem(THEME_STORAGE_KEY);
+  } catch (e) {
+    // Sin almacenamiento: default.
+  }
+  return resolveTheme(saved);
 }
 
 // Aplica el tema al <html>: data-theme para los overrides de CSS y
