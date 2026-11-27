@@ -8,10 +8,9 @@ import {
   Boxes,
   ChefHat,
   FileText,
-  Moon,
-  Sun,
   TrendingUp,
 } from 'lucide-react';
+import { ThemeList } from './ThemeSelector.jsx';
 
 const GROUPS = [
   {
@@ -38,11 +37,19 @@ const GROUPS = [
   },
 ];
 
-export default function Sidebar({ view, onNavigate, counts, dark, onToggleDark, progress }) {
+export default function Sidebar({ view, onNavigate, counts, theme, onThemeChange, progress }) {
   return (
-    <aside className="hidden lg:flex flex-col w-64 shrink-0 sticky top-4 h-[calc(100vh-2rem)] glass-strong rounded-3xl p-4 overflow-y-auto thin-scroll">
+    // En el tema 'claro' el sidebar es azul marino (Code XR V2): la clase
+    // .dark aquí crea una isla oscura para que los dark: del contenido
+    // (texto blanco, hovers) se activen solo dentro del sidebar.
+    <aside
+      className={
+        'app-sidebar hidden lg:flex flex-col w-64 shrink-0 sticky top-4 h-[calc(100vh-2rem)] glass-strong rounded-3xl p-4 overflow-y-auto thin-scroll' +
+        (theme === 'claro' ? ' dark' : '')
+      }
+    >
       <div className="flex items-center gap-3 px-2 pt-1 pb-4">
-        <img src="/logo-cantaros.png" alt="Cántaros, Cazos y Cantares" className="h-11 w-11 rounded-2xl object-contain bg-white/70 p-1" />
+        <img src="/logo-cantaros-navidad.png" alt="Cántaros, Cazos y Cantares" className="h-11 w-11 shrink-0 object-contain" />
         <div className="min-w-0">
           <p className="font-extrabold text-slate-900 dark:text-white leading-tight text-[15px]">Cántaros</p>
           <p className="text-xs text-slate-500 dark:text-slate-400 leading-tight">Cazos y Cantares</p>
@@ -107,14 +114,9 @@ export default function Sidebar({ view, onNavigate, counts, dark, onToggleDark, 
         </div>
       )}
 
-      <button
-        type="button"
-        onClick={onToggleDark}
-        className="mt-4 flex items-center gap-3 rounded-full px-3.5 py-2.5 text-sm font-semibold text-slate-600 hover:bg-white/60 dark:text-slate-300 dark:hover:bg-white/10 min-h-[44px]"
-      >
-        {dark ? <Sun size={18} /> : <Moon size={18} />}
-        {dark ? 'Modo claro' : 'Modo oscuro'}
-      </button>
+      <div className="mt-4">
+        <ThemeList theme={theme} onChange={onThemeChange} pillId="theme-pill-sidebar" />
+      </div>
     </aside>
   );
 }

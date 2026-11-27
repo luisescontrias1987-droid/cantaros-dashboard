@@ -3,6 +3,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useDashboard } from './store/DashboardContext.jsx';
+import { THEME_STORAGE_KEY, applyTheme, resolveTheme } from './lib/themes.js';
 import Sidebar from './components/Sidebar.jsx';
 import Topbar from './components/Topbar.jsx';
 import MobileNav from './components/MobileNav.jsx';
@@ -21,18 +22,16 @@ export default function App() {
   const d = useDashboard();
   const [view, setView] = useState('panel');
   const [query, setQuery] = useState('');
-  const [dark, setDark] = useState(() => {
-    const saved = localStorage.getItem('cantaros-theme');
-    if (saved) return saved === 'dark';
-    return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
-  });
+  // Tema visual: 'vidrio-oscuro' (default), 'claro' o 'vidrio'.
+  // Se guarda en localStorage y persiste entre visitas. La clave vieja
+  // 'dark'/'light' migra a 'vidrio'/'claro' (ver lib/themes.js).
+  const [theme, setTheme] = useState(() => resolveTheme(localStorage.getItem(THEME_STORAGE_KEY)));
   const [unlocked, setUnlocked] = useState(() => sessionStorage.getItem('cantaros-pin-ok') === '1');
   const [booted, setBooted] = useState(false);
 
   useEffect(() => {
-    document.documentElement.classList.toggle('dark', dark);
-    localStorage.setItem('cantaros-theme', dark ? 'dark' : 'light');
-  }, [dark]);
+    applyTheme(theme);
+  }, [theme]);
 
   useEffect(() => {
     if (!unlocked) return;
@@ -92,7 +91,7 @@ export default function App() {
   return (
     <div className="app-bg min-h-screen">
       <div className="mx-auto flex max-w-[1440px] gap-5 p-3 sm:p-4">
-        <Sidebar view={view} onNavigate={navigate} counts={counts} dark={dark} onToggleDark={() => setDark(!dark)} progress={progress} />
+        <Sidebar view={view} onNavigate={navigate} counts={counts} theme={theme} onThemeChange={setTheme} progress={progress} />
         <main className="flex-1 min-w-0 pb-28 lg:pb-8">
           <Topbar
             query={query}
@@ -102,8 +101,8 @@ export default function App() {
             onWeekChange={(w) => d.changeWeek(w)}
             period={d.period}
             onPeriodChange={(p) => d.changePeriod(p)}
-            dark={dark}
-            onToggleDark={() => setDark(!dark)}
+            theme={theme}
+            onThemeChange={setTheme}
             live={d.live}
           />
           {!booted && (
