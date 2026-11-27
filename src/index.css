@@ -20,9 +20,22 @@ body {
   font-family: var(--font-sans);
   font-size: 15px;
   line-height: 1.45;
+  color: #0f172a;
   -webkit-font-smoothing: antialiased;
   -webkit-tap-highlight-color: transparent;
   overscroll-behavior-y: none;
+}
+
+/* Color de texto base: sin esto, el texto sin clase propia (números de
+   las tablas, leyenda de las gráficas) heredaba el negro del navegador
+   y no se veía sobre el vidrio oscuro. En claro sigue siendo oscuro. */
+.dark body {
+  color: #f1f5f9;
+}
+
+/* Controles nativos (selector desplegable, calendario) en modo oscuro. */
+.dark {
+  color-scheme: dark;
 }
 
 /* Fondo: degradado oscuro azul marino a teal/cian, con brillos difuminados. */
@@ -261,6 +274,21 @@ textarea:focus {
 [data-theme="vidrio-oscuro"] .input {
   background: rgba(255, 255, 255, 0.07);
   border-color: rgba(255, 255, 255, 0.18);
+}
+
+/* Gráficas (Recharts) en temas oscuros: el tooltip trae fondo blanco en
+   línea y los ejes gris medio; se adaptan por CSS (el fill/stroke en
+   línea pierde contra estas reglas). */
+.dark .recharts-default-tooltip {
+  background-color: rgba(8, 15, 26, 0.94) !important;
+  border-color: rgba(255, 255, 255, 0.16) !important;
+  color: #f1f5f9 !important;
+}
+.dark .recharts-cartesian-axis-tick text {
+  fill: #94a3b8;
+}
+.dark .recharts-cartesian-grid line {
+  stroke: rgba(255, 255, 255, 0.1);
 }
 
 /* --- Claro (Code XR Admin Dashboard UI V2): fondo pálido, tarjetas

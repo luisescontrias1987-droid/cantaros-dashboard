@@ -119,13 +119,13 @@ export default function Inventory({ area, query }) {
                 <tr key={r.producto} className="border-t border-slate-200/60 dark:border-white/10">
                   <td className="py-2 pr-3 font-semibold text-slate-800 dark:text-slate-100">{r.producto}</td>
                   <td className="py-2 pr-3 text-slate-500 dark:text-slate-400">{r.seccion || '—'}</td>
-                  <td className="py-2 pr-3">{fmtNum(r.total)}</td>
-                  <td className="py-2 pr-3">{fmtNum(r.venta)}</td>
-                  <td className="py-2 pr-3">{fmtNum(r.diferencia)}</td>
+                  <td className="py-2 pr-3 text-slate-800 dark:text-slate-100">{fmtNum(r.total)}</td>
+                  <td className="py-2 pr-3 text-slate-800 dark:text-slate-100">{fmtNum(r.venta)}</td>
+                  <td className="py-2 pr-3 text-slate-800 dark:text-slate-100">{fmtNum(r.diferencia)}</td>
                   <td className="py-2 pr-3 font-semibold text-red-600 dark:text-red-400">{num(r.perdido) > 0 ? fmtNum(r.perdido) : '—'}</td>
                   <td className="py-2 pr-3 font-semibold text-amber-600 dark:text-amber-400">{num(r.sobrante) > 0 ? fmtNum(r.sobrante) : '—'}</td>
-                  <td className="py-2 pr-3">{num(r.costo) ? fmtMoney(r.costo) : '—'}</td>
-                  <td className="py-2 pr-3">{fmtMoney(r.valor_total)}</td>
+                  <td className="py-2 pr-3 text-slate-800 dark:text-slate-100">{num(r.costo) ? fmtMoney(r.costo) : '—'}</td>
+                  <td className="py-2 pr-3 text-slate-800 dark:text-slate-100">{fmtMoney(r.valor_total)}</td>
                   <td className="py-2 pr-3 text-red-600 dark:text-red-400">{num(r.perdido_pesos) > 0 ? fmtMoney(r.perdido_pesos) : '—'}</td>
                   <td className="py-2 text-amber-600 dark:text-amber-400">{num(r.sobrante_pesos) > 0 ? fmtMoney(r.sobrante_pesos) : '—'}</td>
                 </tr>

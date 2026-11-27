@@ -202,10 +202,10 @@ export default function Panel({ query, onNavigate }) {
                 {sortedGroups.map((g) => (
                   <tr key={g.grupo} className="border-t border-slate-200/60 dark:border-white/10">
                     <td className="py-2 pr-2 font-semibold text-slate-800 dark:text-slate-100">{g.grupo}</td>
-                    <td className="py-2 pr-2">{fmtMoney(g.neta)}</td>
-                    <td className="py-2 pr-2">{fmtNum(g.unidades)}</td>
-                    <td className="py-2 pr-2">{g.margen != null ? fmtMoney(g.margen) : '—'}</td>
-                    <td className="py-2">{(g.pct * 100).toFixed(1).replace('.', ',') + ' %'}</td>
+                    <td className="py-2 pr-2 text-slate-800 dark:text-slate-100">{fmtMoney(g.neta)}</td>
+                    <td className="py-2 pr-2 text-slate-800 dark:text-slate-100">{fmtNum(g.unidades)}</td>
+                    <td className="py-2 pr-2 text-slate-800 dark:text-slate-100">{g.margen != null ? fmtMoney(g.margen) : '—'}</td>
+                    <td className="py-2 text-slate-800 dark:text-slate-100">{(g.pct * 100).toFixed(1).replace('.', ',') + ' %'}</td>
                   </tr>
                 ))}
                 {!sortedGroups.length && (
@@ -279,11 +279,11 @@ export default function Panel({ query, onNavigate }) {
                 <tr key={r.nombre} className="border-t border-slate-200/60 dark:border-white/10">
                   <td className="py-2 pr-3 font-semibold text-slate-800 dark:text-slate-100">{r.nombre}</td>
                   <td className="py-2 pr-3 text-slate-500 dark:text-slate-400">{r.grupo}</td>
-                  <td className="py-2 pr-3">{fmtNum(r.unidades)}</td>
-                  <td className="py-2 pr-3">{fmtMoney(r.neta)}</td>
-                  <td className="py-2 pr-3">{r.costo != null ? fmtMoney(r.costo) : '—'}</td>
-                  <td className="py-2 pr-3">{r.margen != null ? fmtMoney(r.margen) : '—'}</td>
-                  <td className="py-2">{r.margenPct != null ? fmtPct(r.margenPct) : '—'}</td>
+                  <td className="py-2 pr-3 text-slate-800 dark:text-slate-100">{fmtNum(r.unidades)}</td>
+                  <td className="py-2 pr-3 text-slate-800 dark:text-slate-100">{fmtMoney(r.neta)}</td>
+                  <td className="py-2 pr-3 text-slate-800 dark:text-slate-100">{r.costo != null ? fmtMoney(r.costo) : '—'}</td>
+                  <td className="py-2 pr-3 text-slate-800 dark:text-slate-100">{r.margen != null ? fmtMoney(r.margen) : '—'}</td>
+                  <td className="py-2 text-slate-800 dark:text-slate-100">{r.margenPct != null ? fmtPct(r.margenPct) : '—'}</td>
                 </tr>
               ))}
               {!filtered.length && (
@@ -341,9 +341,9 @@ export default function Panel({ query, onNavigate }) {
                   {series.map((s) => (
                     <tr key={s.label} className="border-t border-slate-200/60 dark:border-white/10">
                       <td className="py-2 pr-3 font-semibold text-slate-800 dark:text-slate-100">{s.label}</td>
-                      <td className="py-2 pr-3">{fmtMoney(s.venta_neta)}</td>
-                      <td className="py-2 pr-3">{fmtMoney(s.margen)}</td>
-                      <td className="py-2">{fmtPct(s.margen_pct)}</td>
+                      <td className="py-2 pr-3 text-slate-800 dark:text-slate-100">{fmtMoney(s.venta_neta)}</td>
+                      <td className="py-2 pr-3 text-slate-800 dark:text-slate-100">{fmtMoney(s.margen)}</td>
+                      <td className="py-2 text-slate-800 dark:text-slate-100">{fmtPct(s.margen_pct)}</td>
                     </tr>
                   ))}
                 </tbody>
